@@ -2,7 +2,7 @@
 
 This project extracts lot information from iArremate auction pages using Python and Playwright.
 
-The main script is `scrape_iarremate_playwright.py`. It starts from an iArremate lot URL, fetches each lot page in sequence, and writes normalized auction-analysis data to both JSON and CSV.
+The main script is `scrape_iarremate_playwright.py`. It starts from an iArremate lot URL, fetches each lot page in sequence, and writes normalized auction-analysis data to JSON.
 
 ## Requirements
 
@@ -40,13 +40,6 @@ Pass the first lot URL and an output JSON filename:
 ```
 
 The script will start at lot `1`, then continue to lot `2`, `3`, and so on until the next page has no lot data.
-
-It also creates a CSV next to the JSON file:
-
-```text
-iarremate_cukier_arte_038_lots.json
-iarremate_cukier_arte_038_lots.csv
-```
 
 ## Scrape a Lot Range
 
@@ -91,10 +84,63 @@ For a quick test, use `--max-lots`:
 
 ## Output Format
 
-Each JSON record uses this normalized schema:
+The JSON file is a single object with shared auction terms and a normalized lot array:
+
+```json
+{
+  "terms_and_conditions": {
+    "source_url": "https://www.iarremate.com/cukier_arte/038/1",
+    "terms_text": "...",
+    "payments_and_pickup_text": "...",
+    "bid_confirmation_text": "..."
+  },
+  "buyer_premium": {
+    "percent": 5,
+    "applies_to_all_lots": true,
+    "text": "A(s) obra(s) arrematada(s) será(ao) acrescida(s) da comissão do leiloeiro oficial, que é de 5%...",
+    "source_section": "Pagamentos e retiradas"
+  },
+  "lots": []
+}
+```
+
+Each item in `lots` uses this normalized schema:
 
 - `lot_number`
 - `url`
 - `auction_house`
 - `auction_name`
 - `auction_id`
+- `auction_date`
+- `auction_location`
+- `currency`
+- `artist`
+- `title`
+- `medium`
+- `dimensions`
+- `year`
+- `edition`
+- `signature`
+- `framed`
+- `current_bid_brl`
+- `estimate_low_brl`
+- `estimate_high_brl`
+- `bid_increment_brl`
+- `status`
+- `condition`
+- `provenance`
+- `certificate`
+- `gallery_labels`
+- `literature`
+- `exhibition_history`
+- `image_urls`
+- `description_text`
+
+## Notes
+
+- The starting URL can point to any lot in the auction, but if you pass `--start-lot`, the script rewrites the URL to that lot number.
+- `--end-lot` is inclusive.
+- Brazilian currency values are converted into numbers, for example `1.670,00` becomes `1670`.
+- Placeholder image URLs such as `noimage.png` are removed from `image_urls`.
+- The scraper retries temporary Playwright navigation errors up to three times.
+- During long scrapes, it checkpoints output every 25 lots.
