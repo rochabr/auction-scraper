@@ -20,7 +20,7 @@ python3 -m venv .venv
 Install the Python dependencies:
 
 ```bash
-.venv/bin/python -m pip install --upgrade pip playwright beautifulsoup4 lxml
+.venv/bin/python -m pip install --upgrade pip playwright beautifulsoup4 lxml pillow
 ```
 
 Install the Playwright browser:
@@ -31,15 +31,27 @@ Install the Playwright browser:
 
 ## Scrape All Lots
 
-Pass the first lot URL and an output JSON filename:
+Pass the first lot URL:
+
+```bash
+.venv/bin/python scrape_iarremate_playwright.py https://www.iarremate.com/cukier_arte/038/1
+```
+
+The script derives the default JSON filename from the auction URL. For example:
+
+```text
+https://www.iarremate.com/selum-leiloes/027/1 -> selum-leiloes_027.json
+```
+
+You can still pass a custom output filename:
 
 ```bash
 .venv/bin/python scrape_iarremate_playwright.py \
   https://www.iarremate.com/cukier_arte/038/1 \
-  iarremate_cukier_arte_038_lots.json
+  custom_output.json
 ```
 
-The script will start at lot `1`, then continue to lot `2`, `3`, and so on until the next page has no lot data.
+The script will start at lot `1`, then continue to lot `2`, `3`, and so on. If a lot number is missing, it checks the next three lot numbers before stopping.
 
 ## Scrape a Lot Range
 
@@ -48,7 +60,6 @@ Use `--start-lot` and `--end-lot` to scrape only part of an auction. Both option
 ```bash
 .venv/bin/python scrape_iarremate_playwright.py \
   https://www.iarremate.com/cukier_arte/038/1 \
-  iarremate_cukier_arte_038_lots_10_20.json \
   --start-lot 10 \
   --end-lot 20
 ```
@@ -60,14 +71,12 @@ You can also pass only one bound:
 ```bash
 .venv/bin/python scrape_iarremate_playwright.py \
   https://www.iarremate.com/cukier_arte/038/1 \
-  iarremate_cukier_arte_038_from_50.json \
   --start-lot 50
 ```
 
 ```bash
 .venv/bin/python scrape_iarremate_playwright.py \
   https://www.iarremate.com/cukier_arte/038/1 \
-  iarremate_cukier_arte_038_to_25.json \
   --end-lot 25
 ```
 
@@ -78,9 +87,50 @@ For a quick test, use `--max-lots`:
 ```bash
 .venv/bin/python scrape_iarremate_playwright.py \
   https://www.iarremate.com/cukier_arte/038/1 \
-  test_lots.json \
   --max-lots 3
 ```
+
+## Download Images
+
+Add `--download-images` to save images while scraping:
+
+```bash
+.venv/bin/python scrape_iarremate_playwright.py \
+  https://www.iarremate.com/cukier_arte/038/1 \
+  --download-images
+```
+
+The image folder is derived from the auction URL, using the same base name as the JSON file. For example:
+
+```text
+https://www.iarremate.com/selum-leiloes/027/1 -> selum-leiloes_027/
+```
+
+You can still pass a custom image folder:
+
+```bash
+.venv/bin/python scrape_iarremate_playwright.py \
+  https://www.iarremate.com/cukier_arte/038/1 \
+  --download-images images/cukier_arte_038
+```
+
+Images are saved as PNG files. Lot numbers from `1` through `99` are padded to three digits.
+
+If a lot has one image, the filename is:
+
+```text
+001.png
+```
+
+If a lot has multiple images, filenames are:
+
+```text
+001-1.png
+001-2.png
+001-3.png
+```
+
+Lot `100` and above are not padded, for example `100.png` or `100-1.png`.
 
 ## Output Format
 
@@ -140,6 +190,7 @@ Each item in `lots` uses this normalized schema:
 
 - The starting URL can point to any lot in the auction, but if you pass `--start-lot`, the script rewrites the URL to that lot number.
 - `--end-lot` is inclusive.
+- If a lot page is missing, the scraper checks the next three lot numbers before stopping.
 - Brazilian currency values are converted into numbers, for example `1.670,00` becomes `1670`.
 - Placeholder image URLs such as `noimage.png` are removed from `image_urls`.
 - The scraper retries temporary Playwright navigation errors up to three times.
