@@ -100,10 +100,10 @@ Add `--download-images` to save images while scraping:
   --download-images
 ```
 
-The image folder is derived from the auction URL, using the same base name as the JSON file. For example:
+The image folder is created inside `images/` and derived from the auction URL, using the same base name as the JSON file. For example:
 
 ```text
-https://www.iarremate.com/selum-leiloes/027/1 -> selum-leiloes_027/
+https://www.iarremate.com/selum-leiloes/027/1 -> images/selum-leiloes_027/
 ```
 
 You can still pass a custom image folder:

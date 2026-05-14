@@ -1144,7 +1144,7 @@ def main() -> None:
         const="",
         default=None,
         metavar="DIR",
-        help="Download lot images. Defaults to {auction-slug}_{auction-id}/ when DIR is omitted.",
+        help="Download lot images. Defaults to images/{auction-slug}_{auction-id}/ when DIR is omitted.",
     )
     args = parser.parse_args()
 
@@ -1159,7 +1159,7 @@ def main() -> None:
     output = Path(args.output) if args.output else Path(f"{default_name}.json")
     image_dir = None
     if args.download_images is not None:
-        image_dir = Path(args.download_images) if args.download_images else Path(default_name)
+        image_dir = Path(args.download_images) if args.download_images else Path("images") / default_name
 
     lots = scrape(args.url, output, args.max_lots, args.start_lot, args.end_lot, image_dir)
     print(f"Wrote {len(lots)} lots to {output}")

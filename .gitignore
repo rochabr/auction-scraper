@@ -217,6 +217,7 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+/scraped
 /images
 .DS_Store
 *.json
