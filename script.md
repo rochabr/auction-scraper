@@ -1,7 +1,8 @@
 # Presentation script — Art Auction Intelligence Assistant
 
 Speaker notes for walking through [AGENTS.md](AGENTS.md). Use the spoken paragraphs as a starting point and adjust them to your own voice.
-Aim for a five-to-seven-minute overview, then follow the interviewer's questions into the relevant section, command or file.
+Aim for a five-to-seven-minute overview using the spoken paragraphs. Use the best-practice callouts as optional discussion cues; choose the ones relevant to the interviewer's question.
+These practices guide the design. The selected stack, valuation thresholds and recovery objectives remain project decisions to explain and validate.
 
 ## Opening
 
@@ -25,6 +26,12 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 >
 > I set an objective of reducing research time by 80%, measured against the same task and catalog researched manually. That is a target to validate. Valuation quality is measured separately on historical sales held out from calibration.
 
+**Best practices to highlight:**
+
+- **Customer-first design:** Start with the collector's decision, then justify each capability by how it improves that decision.
+- **Measurable outcomes:** Compare research time against a manual baseline and evaluate valuation quality separately. An efficiency target does not establish accuracy.
+- **Scope control and user authority:** Support research and bidding limits while keeping purchasing decisions with the collector.
+
 **Point to:** Customer journey, scope and measurable outcomes. Explain that the hammer price excludes the buyer's premium, taxes and other costs.
 
 ## 2. Agent Operating Contract
@@ -40,6 +47,13 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 > The three integration responsibilities are explicit: iarremate.com supplies auction catalogs through the scraper, iarrematelegacy.com supplies historical sales, and catalogodasartes.com supplies artist information. The agent must verify their interfaces and authentication rather than invent endpoint paths.
 >
 > Existing authorization remains valid, while destructive or unauthorized actions stop at the affected stage. Retrieved content is treated as data so a catalog description cannot become an instruction to the coding agent.
+
+**Best practices to highlight:**
+
+- **Explicit agent instructions:** Name responsibilities, commands and boundaries so the agent can act with less ambiguity. This follows the project-specific guidance described by [AGENTS.md](https://agents.md/).
+- **Least privilege and enforced authorization:** Instructions guide behavior; scoped identities and protected environments enforce permission boundaries. The Markdown file alone cannot enforce access control.
+- **Prompt-injection defenses:** Treat catalog and provider content as untrusted input, with constrained tools and validated outputs. These controls reduce exposure; no individual control guarantees prevention. See [OWASP prompt-injection guidance](https://genai.owasp.org/llmrisk/llm01-prompt-injection/).
+- **Discover and validate contracts:** Inspect existing interfaces and credential references before integration. Avoid inventing provider paths or presenting an adapter placeholder as a verified connection.
 
 **Point to:** Integration inventory, authority boundaries and the rule requiring evidence for completion claims. The previous scraper source is available through the historical links in `docs/integrations.md`.
 
@@ -57,6 +71,13 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 >
 > The bid calculation starts from a conservative valuation bound, applies a safety margin and any budget, then finds the maximum hammer bid that fits the total acquisition cost. Unknown fees or insufficient comparable sales produce an explicit evidence gap and a constrained result.
 
+**Best practices to highlight:**
+
+- **Explicit tool contracts:** Typed input and output schemas make integrations easier to validate and consume. The [MCP tools specification](https://modelcontextprotocol.io/specification/2026-07-28/server/tools) defines schema-based tool interfaces.
+- **Idempotent requests:** The same caller and idempotency key should return the same analysis; changed payloads must be rejected. This applies the retry-safety pattern described in [Amazon Builders' Library](https://aws.amazon.com/builders-library/making-retries-safe-with-idempotent-APIs/).
+- **Deterministic critical calculations:** Keep price, fees, rounding and budget calculations in tested, versioned code. The chosen valuation formula and minimum sample are project policies that require calibration.
+- **Provenance and explicit uncertainty:** Preserve source records and calculation inputs. Withhold unsupported recommendations so users can distinguish evidence gaps from low valuations.
+
 **Point to:** The six-tool table, idempotency behavior, comparable-sale eligibility and total-acquisition-cost calculation. Emphasize that percentile ranges describe the sample; they are not statistical confidence intervals.
 
 ## 4. Technical Architecture & Engineering Standards
@@ -72,6 +93,13 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 > LiteLLM centralizes authorized model access and usage controls. PostgreSQL owns durable job and result state, while S3-compatible storage retains larger evidence and report artifacts. OpenTelemetry connects the execution stages through traces and metrics.
 >
 > These boundaries have costs: the graph, broker and workers add operational components. They support catalog-scale background processing, recovery and traceability. The repository map identifies the owning source files, and locked dependencies make builds reproducible.
+
+**Best practices to highlight:**
+
+- **Separation of concerns:** Give interfaces, research orchestration, message delivery and valuation clear owners. Review the operational cost of every additional component.
+- **Durable, repeatable task processing:** Persist progress and tolerate message redelivery with idempotent writes and bounded retries. [Celery's task guidance](https://docs.celeryq.dev/en/stable/userguide/tasks.html) discusses idempotency, acknowledgement and retry behavior; queue delivery alone does not guarantee exactly-once business effects.
+- **Reproducible execution:** Pin dependencies and preserve input and policy versions so a result can be reconstructed. Reproducible calculations do not imply identical model wording on every run.
+- **Observability across boundaries:** Correlate requests, graph stages and background work to investigate latency, failures and cost. [OpenTelemetry traces](https://opentelemetry.io/docs/concepts/signals/traces/) explain how connected spans describe an operation across components.
 
 **Point to:** Runtime topology, architecture decisions and repository map. Be ready to explain the distinction between graph progress and message delivery, including why processing must tolerate duplicate messages.
 
@@ -89,6 +117,13 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 >
 > Production controls include private data services, short-lived identities, secret injection, readiness checks and compatible database migrations. A failed release can restore a compatible application revision while preserving data. First deployments have their own recovery path because no earlier revision exists.
 
+**Best practices to highlight:**
+
+- **Declarative infrastructure with one owner:** Terraform defines infrastructure and Helm defines workloads. Clear ownership reduces competing updates and makes proposed changes reviewable.
+- **Review and apply the same plan:** Bind authorization to a saved Terraform plan, use remote state and locking, and reject changed inputs. This follows [HashiCorp's automation workflow](https://developer.hashicorp.com/terraform/tutorials/automation/automate-terraform).
+- **Short-lived deployment credentials:** Use OIDC federation and scoped roles instead of repository-stored cloud keys. [GitHub's Azure OIDC guidance](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure) describes the federated authentication approach.
+- **Immutable releases and compatible recovery:** Promote the same verified digests and chart packages. Use compatible schema changes so an application rollback can preserve data; database reversal needs its own recovery decision.
+
 **Point to:** Terraform roots, chart paths, script mappings, release manifests and the saved-plan contract. Explain the ownership boundary between Terraform resources and Helm resources.
 
 ## 6. Agent Execution Workflow
@@ -104,6 +139,13 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 > Every stage has prerequisites and evidence. A failed gate stops dependent work. The agent fixes the defect and reruns affected checks without bypassing policy or rebuilding a different release for production.
 >
 > Staging also exercises concurrent catalog analysis, worker recovery, backup restoration and applicable rollback behavior. Production promotion finishes with authenticated MCP smoke tests against the deployed release and authorized providers.
+
+**Best practices to highlight:**
+
+- **Gated delivery:** A stage must establish evidence before dependent work proceeds. Scripts and CI checks must enforce this rule; an instruction to stop is insufficient by itself.
+- **Progressive qualification:** Verify locally, exercise recovery in staging, then promote the same release to production. Keep destructive qualification tests isolated from production data.
+- **Readiness plus functional verification:** Probes help control traffic and restarts; authenticated MCP smoke tests verify customer-visible behavior. [Kubernetes probe guidance](https://kubernetes.io/docs/concepts/workloads/pods/probes/) distinguishes startup, readiness and liveness responsibilities.
+- **Bounded work:** Deadlines, retry limits and spend budgets constrain failures and cost. Recovery must report an actionable blocker when those bounds are exhausted.
 
 **Point to:** Local and staging command blocks, runtime checks and production promotion. Walk through one submission from `analyze_auction` to durable status and cited results, rather than reading every command aloud.
 
@@ -121,6 +163,12 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 >
 > If an external gate blocks delivery, the agent reports partial completion and the precise remaining action. It cannot claim production success from file generation alone.
 
+**Best practices to highlight:**
+
+- **Behavioral acceptance criteria:** Require observable results such as complete lot accounting, authorization failures and reproducible calculations. File creation alone cannot establish delivery.
+- **Recovery testing:** Exercise worker failure, redelivery, restoration and applicable rollback. State the conditions tested and measured recovery objectives rather than claiming all failures are covered.
+- **Evidence-based completion:** Link check results to the exact commit, digest, plan and release. Keep targets, specified behavior and verified outcomes distinct, including the repository's current placeholder status.
+
 **Point to:** Acceptance checklist and `completion.json` evidence requirements.
 
 ## Closing
@@ -137,3 +185,5 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 - Explain trade-offs when asked: orchestration complexity, provider latency and quotas, sparse comparable sales, and the operating cost of the chosen production stack.
 - Discuss incomplete evidence openly. Faster research is valuable, but it does not establish valuation accuracy or guarantee investment returns.
 - Use the named scripts and charts to demonstrate execution detail. Avoid reading implementation tables line by line.
+- When naming a best practice, point to its concrete requirement and explain the customer or operational benefit. Discuss the added cost or limitation when relevant.
+- Describe these controls as requirements until they have been implemented and verified; the reference links support the practices, not a claim that the placeholder repository already enforces them.
