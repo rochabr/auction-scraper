@@ -193,7 +193,7 @@ Do not invent deployment names, domains, model versions, upstream pins, identiti
 
 ### Repository map — required generated artifacts
 
-Brace groups enumerate generated files; discover existing integration paths.
+Paths containing braces list files the agent must create. Locate and reuse existing integration code before creating adapters.
 
 | Path | Owner and purpose |
 |---|---|
