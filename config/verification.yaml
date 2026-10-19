@@ -1,1 +1,15 @@
-# Structural placeholder. Populate verified inputs according to AGENTS.md.
+# Live verification fixture references. Required before live qualification.
+schema_version: 1
+auction_reference: null
+reference_lot: null
+expected_minimum_lots: 100
+reference_lot_minimum_independent_sales: 3
+require_known_fees_and_bid_ladder: true
+supported_mcp_client_reference: null
+authorized_test_users_reference: null
+cloud_controls_suite: tests/acceptance/test_cloud_controls.py
+staging_rotation_fixtures: run_owned_disposable_only
+production_cloud_checks: readonly_with_matching_staging_evidence
+load_policy: config/runtime.yaml
+recovery_policy: config/retention.yaml
+# Resolve authorized real catalog/lot references and callers; do not manufacture endpoints or outcomes.

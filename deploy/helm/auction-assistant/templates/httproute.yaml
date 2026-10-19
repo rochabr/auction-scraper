@@ -1,0 +1,1 @@
+{{- fail "Structural placeholder: implement httproute.yaml from docs/platform.md and docs/security.md before rendering." -}}

@@ -1,0 +1,32 @@
+schema_version: 1
+data:
+  analysis_records_days: 365
+  evidence_current_versions_days: 365
+  historical_blob_versions_days: 30
+  blob_soft_delete_days: 30
+  container_soft_delete_days: 30
+  cleanup: daily_owned_objects_only
+  legal_or_owner_hold_prevents_purge: true
+database:
+  backup: azure_postgresql_flexible_server_pitr
+  retention_days: 35
+  restore_to: isolated_new_server
+evidence_backup:
+  service: azure_backup_vaulted_blobs
+  schedule: daily
+  interval_hours: 24
+  retention_days: 35
+  restore_to: isolated_new_storage_account
+  latest_completed_recovery_point_max_age_hours: 24
+  verify_region_private_network_and_account_support: true
+recovery:
+  rpo_hours_max: 24
+  rto_hours_max: 4
+  drill_frequency_days: 30
+  reconcile_database_and_blob_hashes: true
+  requeue_only_idempotent_incomplete_work: true
+  production_mutation_forbidden: true
+ownership:
+  operational_owner_reference: null
+  alert_action_group_reference: null
+# Never infer vaulted-backup success from Blob versioning or ZRS alone.

@@ -1,0 +1,37 @@
+# Required lock inventory. Bootstrap must resolve and verify these before any release.
+# Null pins deliberately block execution; they are not substitute versions.
+schema_version: 1
+cert_manager:
+  source: oci://quay.io/jetstack/charts/cert-manager
+  version: null
+  digest: null
+envoy_gateway:
+  source: oci://docker.io/envoyproxy/gateway-helm
+  version: null
+  digest: null
+gateway_api_crds:
+  release_source: https://github.com/kubernetes-sigs/gateway-api/releases
+  version: null
+  manifest_sha256: null
+rabbitmq_cluster_operator:
+  release_source: https://github.com/rabbitmq/cluster-operator/releases
+  version: null
+  manifest_url: null
+  manifest_sha256: null
+  image_digests: []
+rabbitmq:
+  release_source: https://www.rabbitmq.com/release-information
+  version: null
+  image_digest: null
+keda:
+  owner: aks_managed_addon
+  verified_version: null
+otel_collector:
+  release_source: https://github.com/open-telemetry/opentelemetry-collector-contrib/releases
+  version: null
+  image_digest: null
+compatibility:
+  aks_version: null
+  tested_gateway_api_version: null
+  operator_crd_upgrade_evidence: null
+# Record the resolved license/source/digest/compatibility inventory with release evidence.

@@ -1,4 +1,32 @@
-# Placeholder: production environment configuration.
-# Storage is Azure Blob Storage (StorageV2, Standard ZRS), accessed with AKS Workload Identity.
-# Read account URL, container and identity references from Terraform outputs; no account keys.
-# Private connectivity, versioning and soft delete are required; see docs/storage.md.
+# Verified production identifiers only; null references block affected provisioning/runtime gates.
+schema_version: 1
+environment: production
+azure:
+  tenant_id: null
+  subscription_id: null
+  region: null
+  resource_group: null
+  aks_reference: null
+  aks_version: null
+  node_vm_sku: null
+  registry_reference: null
+  postgres_reference: null
+  key_vault_reference: null
+  model_service_reference: null
+  ci_subnet_reference: null
+storage:
+  provider: azure_blob
+  account_url: null
+  container: null
+  identity_reference: null
+  account_kind: StorageV2
+  sku: Standard_ZRS
+  hierarchical_namespace: false
+auth_config: config/auth.yaml
+model_config: config/models.yaml
+runtime_config: config/runtime.yaml
+valuation_policy: config/valuation-policy.yaml
+observability_config: config/observability.yaml
+retention_config: config/retention.yaml
+platform_sources: deploy/platform-sources.yaml
+# Use Terraform outputs/discovered references; no concrete endpoints or credentials invented.

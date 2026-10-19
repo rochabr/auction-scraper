@@ -92,7 +92,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 >
 > LiteLLM centralizes authorized model access and usage controls. PostgreSQL owns durable job and result state, while Azure Blob Storage retains larger evidence and reports. Local Compose uses Azurite through the same Blob SDK. OpenTelemetry connects the execution stages through traces and metrics.
 >
-> These boundaries have costs: the graph, broker and workers add operational components. They support catalog-scale background processing, recovery and traceability. The repository map identifies the owning source files, and locked dependencies make builds reproducible.
+> These boundaries have costs: the graph, broker and workers add operational components. They support catalog-scale background processing, recovery and traceability. The repository map identifies the owning source files, and locked dependencies make builds reproducible. Detailed runtime and recommendation policy lives in versioned configuration, while AGENTS.md points the agent to its owning artifacts and required gates.
 
 **Best practices to highlight:**
 
@@ -115,6 +115,8 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 >
 > The release sequence is build, scan, then sign and publish. Staging and production use the same verified image digest and chart packages. Infrastructure changes apply the exact authorized saved plan, with checks for the environment, identity and input hashes.
 >
+> Platform choices are explicit: Entra External ID for customer identity, Key Vault for secrets, Azure-hosted models and monitoring, Envoy Gateway for routing, and KEDA for worker scaling. Auxiliary configuration and chart values carry limits and settings so the agent instructions can remain focused on orchestration.
+>
 > Storage is explicit: Azure Blob Storage in staging and production, provisioned with Terraform and accessed using AKS Workload Identity. Azurite supports local development. This keeps infrastructure in Azure or AKS and avoids operating a separate production object-storage cluster.
 >
 > Production controls include private data services, short-lived identities, secret injection, readiness checks and compatible database migrations. A failed release can restore a compatible application revision while preserving data. First deployments have their own recovery path because no earlier revision exists.
@@ -127,7 +129,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 - **Explicit Azure storage ownership:** Terraform provisions private Azure Blob resources, and AKS Workload Identity grants scoped data access. Azurite supports local development; real Azure tests prove cloud identity, networking and protection behavior. See [Blob SDK setup](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-python-get-started) and [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite).
 - **Immutable releases and compatible recovery:** Promote the same verified digests and chart packages. Use compatible schema changes so an application rollback can preserve data; database reversal needs its own recovery decision.
 
-**Point to:** Terraform roots, chart paths, script mappings, release manifests and the saved-plan contract. Explain the ownership boundary between Terraform resources and Helm resources.
+**Point to:** Terraform roots, chart paths, config/runtime.yaml, config/valuation-policy.yaml, docs/platform.md, docs/security.md, script mappings, release manifests and the saved-plan contract. Explain the ownership boundary between Terraform resources and Helm resources.
 
 ## 6. Agent Execution Workflow
 
@@ -187,6 +189,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 - Treat existing integrations and authorized access as available inputs; describe how the agent discovers and validates their actual contracts.
 - Explain trade-offs when asked: orchestration complexity, provider latency and quotas, sparse comparable sales, and the operating cost of the chosen production stack.
 - Discuss incomplete evidence openly. Faster research is valuable, but it does not establish valuation accuracy or guarantee investment returns.
+- Explain the ownership rule: AGENTS.md states outcomes and gates; config/policy files, scripts and chart values own implementation detail. Null real-world identifiers are discovery gates, not invented deployment values.
 - Use the named scripts and charts to demonstrate execution detail. Avoid reading implementation tables line by line.
 - When naming a best practice, point to its concrete requirement and explain the customer or operational benefit. Discuss the added cost or limitation when relevant.
 - Describe these controls as requirements until they have been implemented and verified; the reference links support the practices, not a claim that the placeholder repository already enforces them.

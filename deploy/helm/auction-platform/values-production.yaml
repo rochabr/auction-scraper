@@ -1,1 +1,4 @@
-# Placeholder for reviewed production overrides. No endpoints or secrets are configured.
+# Reviewed production overrides; inherit broker/storage defaults from values.yaml.
+environment: production
+namespace: null
+# Resolve names, secret refs and controller identity through validated environment config.

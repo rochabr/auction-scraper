@@ -16,7 +16,11 @@ The intended workflow is to discover an auction, request catalog analysis, track
 - [SCAFFOLD.md](SCAFFOLD.md): placeholder behavior and repository conventions.
 - [Integration inventory](docs/integrations.md): required providers and the previous scraper's historical source.
 - [Storage contract](docs/storage.md): Azure Blob provisioning, local Azurite, identity and verification.
-- [Execution documentation](docs/execution.md) and [operations documentation](docs/operations.md): locations for verified implementation runbooks.
+- [Platform contract](docs/platform.md): Azure/Kubernetes choices, controller ownership, chart settings and deployment order.
+- [Security contract](docs/security.md): customer OAuth, workload identities, Key Vault and rotation.
+- [Valuation policy](docs/valuation.md): matching, confidence, labels, ranking and calibration.
+- [Execution contract](docs/execution.md) and [operations contract](docs/operations.md): bootstrap, wrapper commands, CI connectivity, verification and restore.
+- [Configuration](config/): versioned runtime/model/identity/retention defaults; unresolved real references block execution.
 
 ## Required stack
 

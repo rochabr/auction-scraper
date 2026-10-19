@@ -1,4 +1,16 @@
-# Placeholder: local environment configuration.
-# Storage is Azurite in Docker Compose using the Azure Blob SDK.
-# Supply service URL and development-only credentials through validated local configuration.
-# Never commit credential values; see docs/storage.md.
+schema_version: 1
+environment: local
+services: docker_compose
+storage:
+  provider: azurite
+  account_url: null
+  container: null
+  local_credential_reference: null
+auth_config: config/auth.yaml
+model_config: config/models.yaml
+runtime_config: config/runtime.yaml
+valuation_policy: config/valuation-policy.yaml
+observability_config: config/observability.yaml
+retention_config: config/retention.yaml
+# Resolve Compose service locations/local credentials outside Git; live provider/model access is authorized Azure access.
+# Separate offline test configuration uses only isolated Compose services and ephemeral test keys.

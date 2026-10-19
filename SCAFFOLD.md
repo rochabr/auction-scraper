@@ -16,3 +16,9 @@ This repository provides the file and folder structure described in [AGENTS.md](
 Implement the contracts in AGENTS.md before enabling scripts, chart rendering or workflows. Update source artifacts and regenerate their outputs; do not present placeholders as verified implementation.
 
 The previous standalone scraper and its requirements file are no longer in the working tree. [docs/integrations.md](docs/integrations.md) links to their historical implementation and usage documentation.
+
+## Contract detail and validation
+
+AGENTS.md holds the seven-section mission, boundaries, source map, execution order and release gates. Numeric defaults and implementation detail live in config/, chart values and docs/{platform,security,valuation,execution,operations,storage}.md.
+Configuration and chart values are reviewable contract sources, not deployed settings. Null identity/endpoint/version references deliberately block the relevant gate. Schemas remain fail-closed placeholders until implementation. All scripts still exit 2; templates still block rendering; workflows stay disabled.
+Do not copy auxiliary constants back into AGENTS.md or create competing definitions in scripts/workflows. Validate schemas, source pins, cross-file references and environment overrides before enabling execution.

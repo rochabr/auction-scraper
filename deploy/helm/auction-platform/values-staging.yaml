@@ -1,1 +1,4 @@
-# Placeholder for reviewed staging overrides. No endpoints or secrets are configured.
+# Reviewed staging overrides; inherit broker/storage defaults from values.yaml.
+environment: staging
+namespace: null
+# Resolve names, secret refs and controller identity through validated environment config.

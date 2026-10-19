@@ -1,1 +1,20 @@
-# Structural placeholder. Populate verified inputs according to AGENTS.md.
+schema_version: 1
+destination:
+  provider: azure_monitor_action_group
+  reference: null
+  operational_owner_reference: null
+  require_test_delivery_evidence: true
+rules:
+  queue_oldest_age_seconds: {threshold: 120, duration_seconds: 300}
+  unexpected_error_rate: {threshold: "0.01", duration_seconds: 300, min_requests: 100}
+  failed_lot_fraction: {threshold: "0.05", duration_seconds: 300, min_lots: 20}
+  provider_error_rate: {threshold: "0.10", duration_seconds: 300, min_requests: 20}
+  provider_p95_seconds: {threshold: 15, duration_seconds: 300}
+  analysis_elapsed_seconds: {threshold: 840, duration_seconds: 60}
+  no_numeric_coverage: {threshold_lots: 100, duration_seconds: 900}
+  model_budget_fraction: {threshold: "0.80", duration_seconds: 60}
+  backup_recovery_point_age_hours: {threshold: 23, duration_seconds: 300}
+  certificate_days_to_expiry: {threshold: 14, duration_seconds: 300}
+  telemetry_missing_seconds: {threshold: 300, duration_seconds: 300}
+# The alert script/runbook must map conditions to warning/critical and link recovery actions.
+# Never invent recipients; use verified existing operational contacts/action-group references.

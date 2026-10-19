@@ -1,0 +1,66 @@
+# Versioned execution defaults. Application/scripts must validate and enforce these values.
+schema_version: 1
+providers:
+  connect_timeout_seconds: 5
+  request_timeout_seconds: 20
+  max_attempts: 3
+  retry_backoff_base_seconds: 1
+  retry_backoff_cap_seconds: 8
+  retry_jitter: full
+  concurrency_per_provider: 4
+  max_pages_per_request: 100
+  retry_only: [connection_error, timeout, rate_limit, server_error]
+  honor_retry_after: true
+  reject_retries_beyond_deadline: true
+analysis:
+  deadline_seconds: 900
+  max_lots: 1000
+  max_active_per_user: 5
+  lot_deadline_seconds: 120
+  graph_max_steps_per_lot: 12
+  preserve_completed_lots_on_deadline: true
+  mark_unfinished_lots_failed_on_deadline: true
+celery:
+  concurrency_per_worker: 2
+  prefetch_multiplier: 1
+  task_soft_time_limit_seconds: 120
+  task_hard_time_limit_seconds: 135
+  acks_late: true
+  reject_on_worker_lost: true
+  queue_type: quorum
+  delivery_limit: 5
+  max_task_attempts: 3
+  dead_letter_replay_requires_operator: true
+  result_backend: disabled
+outbox:
+  publish_interval_seconds: 1
+  max_batch: 100
+  lease_seconds: 30
+pagination:
+  default_page_size: 50
+  max_page_size: 100
+  cursor_ttl_seconds: 3600
+cache:
+  backend: postgresql
+  auction_catalog_ttl_seconds: 900
+  artist_ttl_seconds: 86400
+  comparable_sales_ttl_seconds: 86400
+  refresh_fees_before_bid_seconds: 900
+  immutable_analysis_snapshots: true
+  stale_data_requires_explicit_flag: true
+limits:
+  read_requests_per_user_per_minute: 120
+  analysis_submissions_per_user_per_minute: 10
+  ingress_body_bytes: 1048576
+  signed_cursor_required: true
+load:
+  warmup_seconds: 30
+  duration_seconds: 300
+  authenticated_clients: 20
+  read_requests_per_client_per_second: 1
+  concurrent_analyses: 5
+  lots_per_analysis: 100
+  read_status_p95_seconds: 2
+  submission_p95_seconds: 3
+  unexpected_errors_allowed: 0
+  lost_jobs_allowed: 0

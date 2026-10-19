@@ -1,1 +1,70 @@
-# Structural placeholder. Populate verified inputs according to AGENTS.md.
+# Versioned initial decision policy. Changes require calibration, review and renewed evidence.
+schema_version: 1
+policy_version: "1"
+money:
+  arithmetic: decimal
+  rounding: down_to_documented_bid_ladder
+  fx_conversion_requires_cited_source_date_rate: true
+  default_safety_margin: "0.20"
+  budget_scope: per_lot_total_acquisition_cost
+comparables:
+  minimum_independent_sales: 3
+  realized_sales_only: true
+  lookback_years: 10
+  artist_match: exact_verified_canonical_identity
+  attribution_match: exact_normalized_category
+  medium_match: exact_normalized_category
+  require_dimensions: true
+  dimension_orientation: source_recorded_width_and_height
+  max_relative_width_difference: "0.20"
+  max_relative_height_difference: "0.20"
+  artwork_date_max_difference_years: 10
+  artwork_date_when_missing: permit_and_cap_confidence_low
+  condition_when_known: same_normalized_category
+  condition_when_missing: permit_without_adjustment_and_cap_confidence_low
+  prices: normalize_to_identical_evidenced_basis
+  missing_fx: keep_currencies_separate
+  adjustments: none_without_evidence_and_versioned_rule
+  exclude: [unsold, withdrawn, disputed, invalid_price, unresolved_artist, duplicate_transaction]
+statistics:
+  center: median
+  lower_quantile: "0.25"
+  upper_quantile: "0.75"
+  interpolation: linear_p_times_n_minus_1
+confidence:
+  unknown_core_attribute_caps_at: low
+  high:
+    min_sales: 10
+    max_median_sale_age_years: 3
+    max_iqr_over_median: "0.50"
+    require_complete_matching_attributes: true
+  medium:
+    min_sales: 5
+    max_median_sale_age_years: 5
+    max_iqr_over_median: "0.75"
+    require_complete_matching_attributes: true
+  otherwise: low
+labels:
+  precedence: [insufficient_evidence, avoid, opportunity, watch]
+  insufficient_evidence: no_supported_valuation_or_required_cost_input
+  avoid: no_affordable_positive_bid_or_candidate_total_gte_upper_bound
+  opportunity: candidate_total_lte_acquisition_cap_and_confidence_medium_or_high
+  watch: other_supported_affordable_candidate
+ranking:
+  eligible_labels: [opportunity, watch, avoid]
+  sort: [label_order_ascending, lower_bound_to_candidate_total_descending, confidence_descending, independent_sales_descending, lot_id_ascending]
+  label_order: [opportunity, watch, avoid]
+  confidence_order: [high, medium, low]
+  ratio: lower_valuation_bound_divided_by_candidate_total
+  missing_candidate_or_required_cost: insufficient_evidence
+  unsupported_lots_listed_separately: true
+evaluation:
+  split: chronological_with_disjoint_artwork_identity
+  min_calibration_sales: 30
+  min_holdout_sales: 30
+  median_absolute_percentage_error_max: null
+  interval_coverage_min: null
+  thresholds_frozen_before_holdout: true
+  reject_null_thresholds_missing_data_or_unmet_thresholds: true
+# Set error/coverage thresholds from calibration before opening the held-out outcomes.
+# Keep their review, split identity and dataset hash in the evaluation evidence.

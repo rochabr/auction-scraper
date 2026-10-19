@@ -1,1 +1,2 @@
-{{- fail "Placeholder chart: implement the AGENTS.md deployment contract before rendering." -}}
+# Legacy Ingress is disabled. Use Gateway API gateway.yaml and httproute.yaml.
+# Never render this alongside the Envoy Gateway resources.

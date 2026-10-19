@@ -1,1 +1,4 @@
-# Placeholder for reviewed production overrides. No endpoints or secrets are configured.
+# Reviewed production overrides; inherit resource/scaler defaults from values.yaml.
+environment: production
+namespace: null
+# Fill gateway hostname, issuer, identity and secret references from verified config.

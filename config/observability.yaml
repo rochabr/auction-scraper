@@ -1,0 +1,36 @@
+schema_version: 1
+instrumentation: opentelemetry
+production:
+  application_traces_and_custom_metrics: azure_monitor_application_insights
+  python_exporter: azure_monitor_opentelemetry
+  application_logs: json_stdout_to_azure_monitor_agent
+  log_store: azure_log_analytics
+  infrastructure_metrics: azure_monitor_managed_prometheus
+  dashboards: azure_monitor_workbooks
+  collector:
+    role: infrastructure_metrics_and_local_otlp
+    pipeline: prometheus_receiver_to_prometheus_exporter
+    scrape_by: azure_monitor_metrics_addon
+  require_general_availability_ingestion: true
+  application_insights_reference: null
+  log_analytics_reference: null
+  azure_monitor_workspace_reference: null
+local:
+  otlp: compose_otel_collector
+  exporter: redacted_debug
+trace:
+  propagate: [traceparent, tracestate]
+  correlation_fields: [analysis_id, lot_id, task_id, release_digest]
+  sampling_ratio: 1.0
+privacy:
+  exclude: [tokens, secrets, authorization_headers, raw_prompts, raw_provider_payloads, personal_contact_data]
+  metric_dimensions: [service, environment, operation, outcome, provider]
+  forbid_analysis_or_user_ids_in_metric_labels: true
+retention:
+  log_days: 30
+  trace_days: 30
+  metric_minimum_days: 90
+  require_verified_effective_backend_retention: true
+# Do not wire the collector to a preview-only Azure OTLP ingestion path.
+# Let the Python Azure Monitor distro own its SDK once; avoid duplicate instrumentations/export.
+# Record the managed metrics service's supported retention; do not promise unsupported deletion controls.

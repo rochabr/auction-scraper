@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-printf '%s\n' 'Placeholder only: implement this script according to AGENTS.md before execution.' >&2
+# Implementation contract: Accept --phase preflight|runtime. Validate config/schemas, discovered references, provider contracts, target identity and private CI reachability; apply first-provisioning rules from docs/execution.md.
+printf '%s\n' 'Contract scaffold only: implement and verify this script before execution.' >&2
 exit 2

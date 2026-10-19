@@ -1,0 +1,39 @@
+# Discover deployment names, model versions, endpoint and Azure auth scope; never invent them.
+schema_version: 1
+gateway: litellm_library
+provider: azure_openai
+authentication: workload_identity
+endpoint: null
+token_scope: null
+primary:
+  deployment: null
+  model: null
+  model_version: null
+  require_json_schema_outputs: true
+fallback:
+  enabled: false
+  deployment: null
+  model: null
+  model_version: null
+  require_same_region_data_policy_and_schema_support: true
+generation:
+  temperature: 0
+  max_input_tokens_per_call: 8000
+  max_output_tokens_per_call: 1500
+  timeout_seconds: 30
+  max_attempts: 2
+budgets:
+  max_calls_per_lot: 4
+  max_total_tokens_per_lot: 24000
+  max_model_cost_usd_per_lot: "0.10"
+  max_model_cost_usd_per_analysis: "10.00"
+  pricing_reference: null
+  pricing_verified_at: null
+  provider_cost_limits_reference: null
+failure_behavior:
+  no_cross_provider_fallback: true
+  preserve_deterministic_results: true
+  mark_explanation_degraded: true
+  reject_unvalidated_extracted_attributes: true
+# Reserve spend atomically before each call across retries/workers; release unused reservation.
+# No verified pricing or quota/cost policy means no model calls; no unlimited-cost fallback.

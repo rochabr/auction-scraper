@@ -1,1 +1,48 @@
-# Placeholder. Configure reviewed values without embedding credentials.
+# Contract values; chart rendering remains blocked until implementation.
+image:
+  digest: null
+api:
+  replicas: 2
+  resources:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {cpu: "1", memory: 1Gi}
+  autoscaling:
+    kind: HPA
+    minReplicas: 2
+    maxReplicas: 6
+    cpuTargetPercent: 60
+worker:
+  replicas: 2
+  resources:
+    requests: {cpu: 500m, memory: 1Gi}
+    limits: {cpu: "2", memory: 2Gi}
+  terminationGracePeriodSeconds: 150
+  autoscaling:
+    kind: KEDA
+    scaler: rabbitmq
+    mode: QueueLength
+    value: "10"
+    minReplicas: 2
+    maxReplicas: 8
+    pollingIntervalSeconds: 15
+    cooldownPeriodSeconds: 120
+    triggerAuthenticationReference: null
+gateway:
+  controller: envoy_gateway
+  hostname: null
+  tlsMinVersion: "1.2"
+  streamTimeoutSeconds: 900
+  heartbeatSeconds: 15
+  responseBuffering: false
+  automaticSubmissionRetries: false
+  certificateIssuerReference: null
+legacyIngress:
+  enabled: false
+secrets:
+  provider: azure_key_vault_csi
+  vaultReference: null
+  identityReference: null
+  rotationPollSeconds: 120
+  reloadDeadlineSeconds: 300
+  requiredSecretReferences: []
+# Resource sizing is owned here; runtime business limits live in config/runtime.yaml.

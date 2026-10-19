@@ -1,1 +1,32 @@
-# Placeholder. Configure reviewed values without embedding credentials.
+# Contract values; chart rendering remains blocked until implementation.
+rabbitmq:
+  operatorManaged: true
+  replicas: 3
+  queueType: quorum
+  imageDigest: null
+  persistence:
+    storageClass: auction-broker-retain
+    size: 32Gi
+  tls:
+    client: required
+    interNode: required
+  resources:
+    requests: {cpu: 500m, memory: 1Gi}
+    limits: {cpu: "2", memory: 2Gi}
+  credentialSecretReference: null
+storageClass:
+  name: auction-broker-retain
+  provisioner: disk.csi.azure.com
+  skuName: Premium_ZRS
+  reclaimPolicy: Retain
+  volumeBindingMode: WaitForFirstConsumer
+  allowVolumeExpansion: true
+otelCollector:
+  imageDigest: null
+  configurationSource: config/observability.yaml
+certificateIssuer:
+  kind: ClusterIssuer
+  acmeContactReference: null
+  dnsZoneReference: null
+  identityReference: null
+# Controllers/CRDs are separately pinned in deploy/platform-sources.yaml.

@@ -20,7 +20,9 @@ Versioning and redundancy address different failure modes. Meet the recovery obj
 - `compose.yaml`: pinned Azurite image and persistent local volume.
 - `compose.test.yaml`: isolated Azurite test service and disposable test data.
 - `config/environments/*.yaml`: validated service location and credential-reference settings.
-- `tests/integration/test_storage.py`: storage behavior tests and separate real-Azure verification cases.
+- `tests/integration/test_storage.py`: isolated Azurite behavior tests only.
+- `tests/acceptance/test_cloud_controls.py`: real-Azure identity, access, private connectivity and protection checks.
+- `infra/terraform/modules/platform/backup.tf`, `config/retention.yaml`, `docs/operations.md`: vaulted backup, retention and restore/reconciliation.
 
 Terraform owns managed Blob resources. Helm owns application workloads, service accounts and their workload identity bindings; the platform chart does not host a production object-storage service.
 

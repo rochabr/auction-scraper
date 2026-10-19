@@ -53,7 +53,7 @@ Create artifacts before invoking them; reuse these entry points on subsequent ch
 | `make security` | `scripts/security.sh` |
 | `make publish` | `scripts/publish.sh` |
 | `make local-up`, `make local-down` | `scripts/local.sh --action up`, `scripts/local.sh --action down` |
-| `make infra-plan`, `make infra-apply` | `scripts/infra.sh --action plan`, `scripts/infra.sh --action apply` |
+| `make infra-bootstrap`, `make infra-plan`, `make infra-apply` | `scripts/infra.sh --action bootstrap`, `--action plan`, `--action apply` |
 | `make configure-cluster`, `make deploy-dependencies` | `scripts/cluster.sh`, `scripts/dependencies.sh` |
 | `make migrate`, `make deploy`, `make verify` | `scripts/migrate.sh`, `scripts/deploy.sh`, `scripts/verify.sh` |
 | `make rollback` | `scripts/rollback.sh` |
@@ -66,7 +66,7 @@ Pass `ENV`, `RUN_DIR` and required inputs as defined in sections 5–6. Never de
 
 - Inspect instructions, existing code, tests, integrations and cloud ownership first.
 - Create the application, scripts, tests, charts, Terraform and workflows. Execute the prescribed stages.
-- Keep one root AGENTS.md; implementation details belong in source artifacts and operator docs.
+- Keep one root AGENTS.md; source artifacts and docs own implementation details.
 - Make reviewable changes; fix failed gates before dependent work and rerun affected checks.
 - Keep the mandatory stack. Do not weaken this file, tests, security policy or established deployment protection rules.
 - Honor existing authorization. Stop unauthorized or unapproved destructive actions and report the blocker.
@@ -120,7 +120,7 @@ Enforce caller identity, resource ownership, pagination limits and safe errors.
 - Version contracts, persist requests and validate financial options. Authorize canonical IDs; use URLs only for ingestion.
 - Return typed errors for input, authorization, not found, rate limits and provider failure.
 - Return not-ready state and partial coverage for unfinished analyses.
-- The same caller, key and payload must return the same analysis ID.
+- The same caller/key/payload returns the same analysis ID.
 - Reject changed payloads under the same key; refresh creates a new analysis version.
 - Return readable summaries and typed numeric results.
 
@@ -162,11 +162,11 @@ Calculate the maximum hammer bid with a deterministic total-acquisition-cost fun
 |---|---|
 | API and MCP | Python, FastAPI, Pydantic and official MCP SDK; thin handlers sharing services and ownership checks. |
 | Analysis graph | LangGraph: ingest → resolve identity → research artist → retrieve comparables → deterministic valuation → explanation; PostgreSQL checkpoints. |
-| Model access | LiteLLM; authorized models with limits on tokens, calls, time and spend. Permit fallback only under equivalent data policies. |
+| Model access | LiteLLM → Azure OpenAI in Microsoft Foundry; verified deployments and model versions from `config/models.yaml`. |
 | Background jobs | Celery with RabbitMQ; durable work, per-lot checkpoints, bounded retries with backoff and jitter, and dead-letter recovery. |
 | Data | SQLAlchemy/Alembic for PostgreSQL records; Azure Blob Storage for evidence; Azurite locally. |
 | Environments | Docker Compose locally; AKS with Terraform, Helm and GitHub Actions in production. |
-| Telemetry | OpenTelemetry across requests, graph, tasks and providers; trace and analysis IDs, redacted logs, operational and cost metrics. |
+| Telemetry | OpenTelemetry; Azure Monitor/Application Insights, Log Analytics and managed Prometheus per `config/observability.yaml`. |
 
 Commit accepted jobs with a transactional outbox; publish with confirms and recover unpublished records.
 PostgreSQL owns analysis state. Handle at-least-once delivery with uniqueness, leases and idempotent writes.
@@ -174,13 +174,26 @@ States: `queued`, `running`, `completed`, `completed_with_errors`, `failed`; per
 Bound graph iterations and provider concurrency. During model outages, preserve numeric results and mark explanations as degraded.
 Freeze snapshots, comparables, policy/model versions and lineage. Authorize artifact downloads through FastAPI; keep blobs private.
 
-### Architecture decisions
+### Fixed platform choices and auxiliary ownership
 
-Checkpoint research in LangGraph and assign delivery/retries to Celery/RabbitMQ. LiteLLM controls model access; Python reproduces calculations. Managed Blob Storage removes the need to operate object storage on AKS.
+Implement these sources before running dependent targets. Auxiliary values may be calibrated before qualification; version/hash changes invalidate affected evidence. Never relax gates to obtain a pass.
+
+| Decision | Required choice and owning artifacts |
+|---|---|
+| Customer identity | Entra External ID, authorization-code/PKCE, pre-registered MCP clients; `config/auth.yaml` and `docs/security.md`. |
+| Secrets | Azure Key Vault with Workload Identity and Secrets Store CSI; `templates/secretproviderclass.yaml` and `docs/security.md` own mounting, rotation and reload. |
+| TLS and routing | Envoy Gateway/Gateway API, cert-manager and Azure DNS; `templates/{gateway,httproute,certificate}.yaml`, `docs/platform.md` own streaming, DNS and renewal. Do not also render legacy Ingress. |
+| Scaling and broker | API HPA; KEDA RabbitMQ worker scaler. Official RabbitMQ Cluster Operator, three quorum nodes and retained Azure Disk CSI volumes. Chart values and `docs/platform.md` own limits and recovery. |
+| Infrastructure | Azure Blob `azurerm` state; ephemeral private-network Azure CI runners; Terraform roots and `docs/execution.md`. |
+| Release dependencies | `deploy/platform-sources.yaml` records verified upstream versions, hashes and compatibility; chart values own resources/storage. `scripts/dependencies.sh` enforces install order and ownership. |
+| Runtime and recommendations | Bounds/cache: `config/runtime.yaml`. Matching, confidence, labels/ranking: `config/valuation-policy.yaml`, `docs/valuation.md`. |
+| Recovery and monitoring | `config/{retention,observability,alerts}.yaml`, `docs/operations.md` own protection, restore and alert delivery. |
+
+Do not invent deployment names, domains, model versions, upstream pins, identities or secret values. Discover and validate them; block an affected gate when verification fails.
 
 ### Repository map — required generated artifacts
 
-Brace groups enumerate files to create under each directory. Discover existing integration locations separately.
+Brace groups enumerate generated files; discover existing integration paths.
 
 | Path | Owner and purpose |
 |---|---|
@@ -189,10 +202,10 @@ Brace groups enumerate files to create under each directory. Discover existing i
 | `migrations/env.py`, `migrations/versions/`, `alembic.ini` | Alembic migrations. |
 | `pyproject.toml`, `uv.lock`, `.tool-versions`, `Dockerfile`, `compose.yaml`, `compose.test.yaml` | Locked builds and runtime; isolated test services. |
 | `config/environments/{local,staging,production}.yaml`, `config/environment.schema.json` | Verified identities, locations, secret references, limits and schema; no secrets. |
-| `config/{valuation-policy,verification,alerts}.yaml` | Versioned calculation rules, live inputs and alerts. |
+| `config/{auth,models,runtime,valuation-policy,observability,retention,verification,alerts}.yaml`, `config/schemas/` | Versioned policy/defaults and per-file JSON Schemas; environment files supply verified references. |
 | `tests/{unit,contracts,integration,regression,evaluation,acceptance}/` | Test suites defined in section 7. |
 | `scripts/lib/common.sh`, scripts listed in section 1, `Makefile` | Shared safeguards, execution implementations and command interface. |
-| `docs/{integrations,execution,operations,storage}.md` | Contracts, commands, ownership, onboarding and recovery. |
+| `docs/{integrations,execution,operations,storage,platform,security,valuation}.md` | Integration, execution, platform, security, valuation and recovery contracts. |
 
 Pin tools in `.tool-versions`, Python dependencies in `uv.lock`, base images by digest, and providers and charts in their lockfiles.
 On first bootstrap, install pinned tools and generate missing dependency, provider and chart locks from manifests. Validate and commit locks before release checks; never silently update them.
@@ -206,13 +219,13 @@ Use Decimal money, UTC internally, explicit currencies, parameterized SQL, bound
 
 | Artifact | Required contents and owner |
 |---|---|
-| `infra/terraform/bootstrap/` | Isolated backend root, protected state and reviewed migration. |
-| `infra/terraform/modules/platform/` | AKS, Azure Container Registry, identities, Azure Database for PostgreSQL Flexible Server and networking. `storage.tf` owns Blob resources. |
+| `infra/terraform/bootstrap/` | Dedicated Azure Blob `azurerm` state backend, Entra/OIDC access, native locking and reviewed migration. |
+| `infra/terraform/modules/platform/` | AKS, ACR, identities, PostgreSQL Flexible Server, networking, Key Vault, Azure OpenAI, monitoring and backups. `storage.tf` owns Blob resources. |
 | `infra/terraform/environments/{staging,production}/` | Each root contains `main.tf`, `versions.tf`, `backend.tf`, `variables.tf`, `outputs.tf`, `.terraform.lock.hcl`, nonsecret `backend.hcl`. |
 | `infra/policy/{terraform,kubernetes}.rego` | Enforce exposure, encryption, privilege and destructive-change rules. |
-| `deploy/helm/auction-platform/{Chart.yaml,Chart.lock,values.yaml,values-staging.yaml,values-production.yaml}` | Pinned RabbitMQ, configuration and telemetry. Blob Storage is managed by Terraform. |
+| `deploy/helm/auction-platform/{Chart.yaml,Chart.lock,values.yaml,values-staging.yaml,values-production.yaml}` | RabbitMQ cluster, configuration and telemetry; separate pinned controller releases per `docs/platform.md`. |
 | `deploy/helm/auction-assistant/{Chart.yaml,values.yaml,values.schema.json,values-staging.yaml,values-production.yaml}` | Application release and validated environment values. |
-| `deploy/helm/auction-assistant/templates/` | `api-deployment.yaml`, `worker-deployment.yaml`, `service.yaml`, `ingress.yaml`, `serviceaccount.yaml`, `networkpolicy.yaml`, `hpa.yaml`, `pdb.yaml`. |
+| `deploy/helm/auction-assistant/templates/` | `api-deployment.yaml`, `worker-deployment.yaml`, `service.yaml`, `gateway.yaml`, `httproute.yaml`, `certificate.yaml`, `secretproviderclass.yaml`, `scaledobject.yaml`, `triggerauthentication.yaml`, `serviceaccount.yaml`, `networkpolicy.yaml`, `hpa.yaml`, `pdb.yaml`. |
 | `deploy/helm/auction-migrations/{Chart.yaml,values.yaml,templates/job.yaml}` | Migration release: same image digest and exclusive database lock. |
 | `deploy/helm/auction-platform/templates/otel-collector.yaml` | Collector pipelines; load `config/alerts.yaml` through the monitoring integration. |
 | `.github/workflows/{ci,build,infra,release}.yml` | Checks; build and publish; protected plan and apply; serialized deployment and verification. |
@@ -228,12 +241,9 @@ Use Decimal money, UTC internally, explicit currencies, parameterized SQL, bound
 
 ### Azure storage contract
 
-- Staging/production: Azure Blob Storage, StorageV2, Standard ZRS, HNS disabled. Enable versioning and 30-day blob/container soft delete; verify region support.
-- Local: pin Azurite in `compose.yaml` and `compose.test.yaml`, with persistent dev data and isolated test volumes. Do not deploy it to production.
-- Pin `azure-storage-blob` and `azure-identity`; implement `adapters/blob_storage.py` with the same Blob SDK for both environments.
-- In `storage.tf`, provision the account, private containers, Blob private endpoint/DNS and scoped RBAC. Disable public network access and Shared Key authorization.
-- AKS uses `WorkloadIdentityCredential` with container-scoped Storage Blob Data Contributor. Local credentials stay outside Git; production forbids connection strings/account keys.
-- Read account URL/container from Terraform outputs and validated config; never invent endpoints. Save hashes and cloud version IDs; retain restore gates.
+Use Azure Blob Storage (StorageV2, Standard ZRS) in staging/production and Azurite locally through the Azure Blob SDK.
+`docs/storage.md` owns identity, private endpoints, versioning, soft delete and artifact access; `config/retention.yaml` and `docs/operations.md` own backup/restore.
+Terraform owns managed storage; no production object store runs on AKS. Verify account capabilities and cloud controls against Azure.
 
 ### Execution interface
 
@@ -242,13 +252,14 @@ Run targets from repository root; scripts accept `--env "$ENV" --run-dir "$RUN_D
 Use unique DNS-safe run IDs and `RUN_DIR=artifacts/<env>/<run-id>`. Reject reuse across revisions or environments.
 Write append-only `<step>-<suite-or-phase>-<attempt>.json` reports with revision, hashes, times, status and evidence. Empty/skipped required suites or printed instructions cannot pass.
 Failed or blocked gates return nonzero. Restrict raw plans and configuration to `.private/`; exclude `.private/` and `artifacts/` from Git.
-Timeouts: checks and build 30m, Terraform 60m, platform 20m, migrations and app 10m each, smoke 15m. Bound retries, load and recovery suites.
+Enforce operation deadlines from `docs/execution.md` and runtime limits from `config/runtime.yaml`.
 
-Use section 1's scripts. Section 7 defines test gates; the remaining operation contracts follow. `test` runs all five non-live suites; isolate and clean only its Compose test project. `verify` requires `RELEASE`; default `SUITE=smoke`.
+`test` runs all five non-live suites in its isolated Compose project. `verify` requires `RELEASE`; default `SUITE=smoke`.
 
 | Target | Required behavior and evidence |
 |---|---|
-| `doctor` | `PHASE=preflight`: config, secret references, providers and cloud identity. Default to preflight; `PHASE=runtime` adds data services. Redact reports. |
+| `doctor` | `PHASE=preflight`: schema, verified identity/references, provider contracts and CI network reachability; runtime adds service probes. Permit absent not-yet-provisioned resources only during declared first provisioning. |
+| `infra-bootstrap` | Require an authorized bootstrap plan; create/import only the state backend, protect local bootstrap state and verify migration/locking. See `docs/execution.md`. |
 | `security` | Require `RELEASE`. Run pinned Gitleaks, Bandit, pip-audit, Trivy and Checkov; bind reports to the digest. Block high or critical findings except scoped, approved, expiring exceptions. |
 | `local-up/down` | Up requires `RELEASE`: healthy dependencies → migrate → app/workers. Down preserves volumes. Record health or shutdown. |
 | `configure-cluster` | Use scoped short-lived access; verify Azure identity, cluster, namespace and RBAC. |
@@ -257,28 +268,17 @@ Use section 1's scripts. Section 7 defines test gates; the remaining operation c
 | `deploy` | Require `RELEASE` and verified package, digest and values; record readiness, manifest and Helm revision. |
 | `rollback` | Require `RELEASE_REVISION` and schema compatibility; restore it and verify smoke. |
 
-`build` emits OCI/chart packages, SBOM/provenance and `release.json` with version, digest, chart hashes, schema and test evidence. `publish` requires trusted CI, `RELEASE` and passing checks; sign unchanged digests and emit `published-release.json` with registry/signature references.
+`build` emits packages, SBOM/provenance and `release.json`; trusted CI `publish` requires passing checks, signs unchanged digests and emits `published-release.json`. Manifest fields and checks belong in `docs/execution.md`.
 AKS scripts require the published manifest; local execution accepts the candidate.
-`deployment-manifest.json` records target identity, configuration and values hashes, and the previous Helm revision and release.
+`deployment-manifest.json` binds target/configuration and rollback references; see `docs/execution.md`.
 Promote identical artifacts; restore the verified bundle at consistent runner paths.
 `validate.sh` checks source, `pyproject.toml`, `uv.lock` and app/migration chart version consistency before build; it must not require a future release manifest.
 
-### Required commands inside the wrappers
+### Wrapper implementation ownership
 
-- `validate.sh`: `uv run --locked ruff check .`, `uv run --locked ruff format --check .`, `uv run --locked mypy src/`, Compose config checks and `terraform fmt -check -recursive`.
-- Initialize and validate Terraform roots without backends for static checks. Lint and render all charts for both environments; run kubeconform and conftest.
-- Resolve locked chart dependencies with `helm dependency build`. Package source charts and regenerate manifests into `RUN_DIR/rendered/`; never edit vendored charts or rendered output directly.
-- `test.sh`: `uv run --locked pytest tests/unit/`, `tests/contracts/`, `tests/integration/`, `tests/regression/`, `tests/evaluation/` as selected; support `TEST_PATH` for a focused test.
-- `infra.sh`: set `TF_ROOT=infra/terraform/environments/$ENV`; initialize with `terraform -chdir="$TF_ROOT" init -input=false -lockfile=readonly -backend-config=backend.hcl`.
-- Generate nonsecret tfvars from validated configuration; run `terraform -chdir="$TF_ROOT" plan -input=false -var-file=<generated-tfvars> -out=<private-plan>`.
-- Export restricted JSON with `terraform -chdir="$TF_ROOT" show -json <verified-saved-plan>`; evaluate `infra/policy/terraform.rego`; write `RUN_DIR/plan-manifest.json` with plan hash/location, source/config/lock hashes and Azure identity.
-- Apply only after policy/authorization checks using `terraform -chdir="$TF_ROOT" apply -input=false <verified-saved-plan>`; never generate a replacement plan during apply.
-- Keep tools, workspace and runner OS/architecture identical for plan/apply. Reject stale state, changed inputs or identities.
-- `deploy.sh`: `helm upgrade --install auction-assistant <verified-chart-package> --namespace <verified-namespace> -f <base-values> -f <environment-values> --wait --rollback-on-failure --timeout 10m`.
-- Pin compatible Helm 4 tooling; pass the release image digest explicitly. Never use mutable image tags or `--reuse-values`.
-- `rollback.sh`: `helm rollback auction-assistant <verified-revision> --namespace <verified-namespace> --wait --timeout 10m`; then invoke smoke verification.
-- Verify recoverable backups before migrating existing data. For an empty database, verify backups and point-in-time recovery are configured, then initialize the schema.
-- On rollout or smoke failure, attempt one compatible app rollback and retain diagnostics. For a first installation, preserve data and verify recovery from the failed installation.
+Implement exact wrapper commands, inputs and bootstrap safeguards in `docs/execution.md` and the named scripts.
+Keep saved-plan identity/hash checks, immutable digest promotion, compatible migrations and verified rollback mandatory.
+Validate auxiliary schemas and rendered charts before execution; missing required identity, limits, policy or pinned sources blocks the affected stage.
 
 ### CI and source ownership
 
@@ -342,6 +342,7 @@ make verify SUITE=recovery
 ```
 
 Smoke uses all six tools, authorized providers and `config/verification.yaml`; verify citations, lot accounting, persistence, ownership and traces.
+On AKS, smoke also runs `tests/acceptance/test_cloud_controls.py`: Azure identity/private access, Blob protection, OAuth client flow, model deployment, TLS/secrets controls and telemetry/alert delivery. Local integration tests never require cloud mutations.
 Run the section 7 load profile; record request counts, errors, latency and throttling.
 Require recovery point objective (RPO) ≤24h and recovery time objective (RTO) ≤4h. Recovery tests must not change production data or shared environments.
 
@@ -362,16 +363,17 @@ Implement the named checks below. Calculation vectors use BRL; set taxes and fix
 | `make test-unit` | `V_low=1000`, margin 20%, per-lot budget 600, premium 10%, zero tax/fixed costs, bid grid 0,10,20,… → cap 600, max hammer 540, total 594; next bid 550 costs 605 and fails. |
 | `make test-unit` | Fewer than three independent eligible sales → insufficient evidence and no numeric valuation/bid. Eligible sales with unknown required fees → valuation may remain, but maximum bid is withheld. Add tax-base, tiered-premium and rounding boundaries. |
 | `make test-contracts` / `tests/contracts/` | Frozen authorized provider records validate normalization, pagination and error mapping. Reject invalid schemas and unsupported destinations. Verify live connectivity separately. |
-| `make test-integration` / `tests/integration/test_storage.py` | Azurite: upload/read/list/delete, exact byte hashes, isolation and missing blobs. Staging: verify Workload Identity, denied unauthorized access, private connectivity and version restoration against Azure Blob Storage. |
+| `make test-integration` / `tests/integration/test_storage.py` | Isolated local Azurite: upload/read/list/delete, exact byte hashes, isolation and missing blobs. No Azure dependency. |
 | `make test-integration` / `tests/integration/` | All six tools pass schema, pagination and status tests. Same caller/key/payload → same ID and one durable job; changed payload → typed conflict. Missing/invalid identity and cross-user access are denied. |
 | `make test-regression` / `tests/regression/` | Each defect has a reproducing case; retained cases pass without weakening expected results. |
 | `make test-evaluation` / `tests/evaluation/` | Freeze error/coverage acceptance thresholds in valuation policy using calibration data before testing independent held-out sales. Report sample size, median absolute percentage error and range coverage; missing data/thresholds or unmet thresholds fail. |
 | `make verify SUITE=smoke` / `tests/acceptance/` | Authorized live scraper/API checks and all six tools pass; a catalog of ≥100 lots reaches a terminal state with each lot accounted for. Numeric outputs cite evidence; partial failures are explicit. Persistence, ownership denial, trace correlation and deployed digest match pass. |
-| `make verify SUITE=load` | After 30s warm-up, run 20 concurrent authenticated clients for 5m: read/status p95 <2s, submission p95 <3s, no unexpected application errors or lost jobs. All five concurrent 100-lot analyses finish within the deadline. |
+| `make verify SUITE=smoke` / `tests/acceptance/test_cloud_controls.py` | AKS cloud controls pass against actual Azure services; staged safe fixtures prove denial, private access and Blob version restoration. TLS/secret rotation drills run only in staging. |
+| `make verify SUITE=load` | After 30s warm-up, run 20 concurrent authenticated clients for 5m: read/status p95 <2s, submission p95 <3s, no unexpected application errors or lost jobs. All five concurrent 100-lot analyses finish within `config/runtime.yaml`'s 900s analysis deadline. |
 | `make verify SUITE=recovery` | Staging worker loss/redelivery preserves committed results without duplication. Isolated database/object restore meets RPO ≤24h and RTO ≤4h; applicable rollback or first-install recovery passes. Restore the qualified digest and rerun smoke. |
 | `make validate`, `make security` | Lint, typing, Compose, Terraform, Helm/schema, policy and scans pass for the release. Security exceptions require owner, scope and expiry; weakening checks or missing reports fails. |
 
-Select a live smoke reference lot with ≥3 eligible realized sales and known fees; require at least one cited valuation/bid and no unexpected execution failures.
+Select a live smoke reference lot with ≥3 eligible realized sales and known fees; require at least one cited valuation/bid and no unexpected execution failures. Test policy boundaries and ranking ties from `docs/valuation.md`.
 Insufficient-evidence lots count as processed successes with an explicit outcome; execution failures count as failed. At termination, `processed = succeeded + failed = total`; persist every lot's outcome and use `completed_with_errors` when failures exist.
 Require nonempty JUnit per test suite and JSON per verification suite with counts, input/policy hashes and evidence. Skipping required checks fails.
 
