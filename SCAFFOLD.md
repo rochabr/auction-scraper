@@ -1,21 +1,18 @@
-# Auction Intelligence Assistant scaffold
+# Scaffold conventions
 
-This repository contains the existing iArremate scraper and a placeholder layout for the Art Auction Intelligence Assistant described in [AGENTS.md](AGENTS.md).
+This repository provides the file and folder structure described in [AGENTS.md](AGENTS.md). [README.md](README.md) describes the application and current status.
 
-The scraper, existing README, requirements and ignore rules are preserved. The added files are structural placeholders; application behavior, infrastructure provisioning and deployment are not implemented.
+## Placeholder behavior
 
-## Layout
+- Python modules and test files contain structural placeholders, not application behavior or passing tests.
+- Operational scripts stop with exit code 2. `make help` only describes the scaffold.
+- Helm templates deliberately reject rendering until implemented.
+- Workflow files end in `.yml.disabled`; they do not activate GitHub Actions.
+- Configuration contains no credentials or concrete provider endpoint paths.
+- Dependency locks and real tool versions must be generated and verified during implementation.
 
-- `src/auction_assistant/`: future service, six MCP tools, research graph, background jobs and provider adapters.
-- `tests/`: unit, provider contract, integration, regression, historical evaluation and acceptance suites.
-- `scripts/` and `Makefile`: named execution entry points. Only `make help` is informational; other targets stop with exit code 2.
-- `config/`: policy and environment placeholders; no credentials or provider endpoint values.
-- `infra/terraform/`: isolated backend, platform module and environment roots.
-- `infra/policy/`: future infrastructure and Kubernetes policy checks.
-- `deploy/helm/`: platform, application and migration charts. Templates deliberately stop Helm rendering until implemented.
-- `.github/workflows/*.yml.disabled`: inert workflow placeholders. GitHub Actions will not run these files.
-- `docs/`: integration inventory and future execution and operations documentation.
+## Source ownership
 
-The existing integration entry point is `scrape_iarremate_playwright.py`; its current usage and output schema are documented in the original root README. Discover and verify the remaining provider contracts before implementation.
+Implement the contracts in AGENTS.md before enabling scripts, chart rendering or workflows. Update source artifacts and regenerate their outputs; do not present placeholders as verified implementation.
 
-Do not interpret this scaffold as a working application or a verified deployment. Implement the contracts in AGENTS.md before enabling scripts or workflows. Generate dependency locks and select real tool versions during implementation; none are fabricated here.
+The previous standalone scraper and its requirements file are no longer in the working tree. [docs/integrations.md](docs/integrations.md) links to their historical implementation and usage documentation.
