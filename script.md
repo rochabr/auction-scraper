@@ -1,8 +1,9 @@
 # Presentation script — Art Auction Intelligence Assistant
 
 Speaker notes for walking through [AGENTS.md](AGENTS.md). Use the spoken paragraphs as a starting point and adjust them to your own voice.
-Aim for a five-to-seven-minute overview using the spoken paragraphs. Use the best-practice callouts as optional discussion cues; choose the ones relevant to the interviewer's question.
+Allow approximately seven to nine minutes for the spoken paragraphs. The delivery walkthrough and best-practice callouts are optional discussion notes; do not read every table or command aloud.
 These practices guide the design. The selected stack, valuation thresholds and recovery objectives remain project decisions to explain and validate.
+AGENTS.md is the delivery contract; auxiliary configuration, scripts, Terraform and charts own implementation detail. This script explains both the decisions and how the agent must demonstrate completion.
 
 ## Opening
 
@@ -90,7 +91,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 
 > FastAPI and the MCP SDK expose the service. LangGraph coordinates the research stages and checkpoints their progress. Celery and RabbitMQ deliver background work and handle retries, which keeps long analyses out of request handlers.
 >
-> LiteLLM centralizes authorized model access and usage controls. PostgreSQL owns durable job and result state, while Azure Blob Storage retains larger evidence and reports. Local Compose uses Azurite through the same Blob SDK. OpenTelemetry connects the execution stages through traces and metrics.
+> LiteLLM controls access to verified Azure OpenAI deployments and enforces usage budgets. Azure Database for PostgreSQL owns durable job and result state, while Azure Blob Storage retains evidence and reports. Local Compose uses PostgreSQL, RabbitMQ and Azurite. OpenTelemetry connects requests, research stages and background tasks to the specified Azure monitoring destinations.
 >
 > These boundaries have costs: the graph, broker and workers add operational components. They support catalog-scale background processing, recovery and traceability. The repository map identifies the owning source files, and locked dependencies make builds reproducible. Detailed runtime and recommendation policy lives in versioned configuration, while AGENTS.md points the agent to its owning artifacts and required gates.
 
@@ -101,7 +102,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 - **Reproducible execution:** Pin dependencies and preserve input and policy versions so a result can be reconstructed. Reproducible calculations do not imply identical model wording on every run.
 - **Observability across boundaries:** Correlate requests, graph stages and background work to investigate latency, failures and cost. [OpenTelemetry traces](https://opentelemetry.io/docs/concepts/signals/traces/) explain how connected spans describe an operation across components.
 
-**Point to:** Runtime topology, architecture decisions and repository map. Be ready to explain the distinction between graph progress and message delivery, including why processing must tolerate duplicate messages.
+**Point to:** Runtime topology, fixed platform choices and the repository map. Use `config/runtime.yaml` for numeric bounds and `docs/execution.md` for the full file inventory. Explain the distinction between graph progress and message delivery, including why processing must tolerate duplicate messages.
 
 ## 5. Infrastructure & Deployment Contract
 
@@ -115,11 +116,11 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 >
 > The release sequence is build, scan, then sign and publish. Staging and production use the same verified image digest and chart packages. Infrastructure changes apply the exact authorized saved plan, with checks for the environment, identity and input hashes.
 >
-> Platform choices are explicit: Entra External ID for customer identity, Key Vault for secrets, Azure-hosted models and monitoring, Envoy Gateway for routing, and KEDA for worker scaling. Auxiliary configuration and chart values carry limits and settings so the agent instructions can remain focused on orchestration.
+> Platform choices are explicit: Entra External ID for customer identity, Key Vault for secrets, Azure OpenAI for models, Azure Monitor for telemetry, Envoy Gateway for routing, and KEDA for worker scaling. Versioned configuration and chart values own detailed settings. AGENTS.md names the decisions, entry points and mandatory gates.
 >
 > Storage is explicit: Azure Blob Storage in staging and production, provisioned with Terraform and accessed using AKS Workload Identity. Azurite supports local development. This keeps infrastructure in Azure or AKS and avoids operating a separate production object-storage cluster.
 >
-> Production controls include private data services, short-lived identities, secret injection, readiness checks and compatible database migrations. A failed release can restore a compatible application revision while preserving data. First deployments have their own recovery path because no earlier revision exists.
+> Production controls include private data services, short-lived identities, secret injection, readiness checks and compatible database migrations. A staging qualification report is required before production mutation. A failed rollout can restore a compatible previous revision; first deployments use a separate recovery path.
 
 **Best practices to highlight:**
 
@@ -133,26 +134,50 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 
 ## 6. Agent Execution Workflow
 
-**Purpose and importance:** Order implementation, validation and release work so each stage establishes the prerequisites for the next.
+**Purpose and importance:** Give the agent one ordered path from discovery to verified production delivery, with commands, prerequisites, artifacts and an exit gate for every step.
 
-**Exercise fit:** Shows how a coding agent can carry the specification through implementation to verified production delivery.
+**Exercise fit:** Demonstrates how the instructions guide autonomous implementation, testing and production deployment. This is where to show how the agent executes the specification.
 
 **Say:**
 
-> This section gives seven explicit steps: discover and implement, validate locally, build and publish in trusted CI, deploy staging, qualify staging, promote the same release to production, and record delivery or recovery. Each step has commands and an exit gate.
+> This section is the execution sequence. First, the agent discovers the existing assets and implements the required application, scripts, tests and infrastructure sources. It then validates, tests and runs the service locally.
 >
-> Every stage has prerequisites and evidence. A failed gate stops dependent work. The agent fixes the defect and reruns affected checks without bypassing policy or rebuilding a different release for production.
+> Trusted CI builds the authoritative release, scans it, signs it and publishes the complete bundle. Staging consumes that bundle, applies the exact authorized infrastructure plan, installs dependencies, runs migrations and deploys the service.
 >
-> Staging also exercises concurrent catalog analysis, worker recovery, backup restoration and applicable rollback behavior. Production promotion finishes with authenticated MCP smoke tests against the deployed release and authorized providers.
+> Staging must pass smoke, load and recovery tests, followed by another smoke test of the original deployment. A qualification step checks those reports and binds them to the release in qualification.json. Missing or mismatched evidence blocks promotion.
+>
+> Production restores that same bundle and qualification report. It verifies authorization, plans and applies production infrastructure, migrates, deploys and runs smoke checks. It does not rebuild the release. Production smoke records completion only after every required gate passes.
+>
+> If rollout or smoke fails, the agent attempts one compatible recovery and retains diagnostics. Restoring the previous service does not make the failed new release successful.
+
+**Optional delivery walkthrough — point to each numbered step:**
+
+Use this table when asked how the agent actually builds, tests, deploys and promotes. It summarizes the complete command blocks in AGENTS.md; the wrappers' exact behavior lives in `docs/execution.md`.
+
+| Step | What the agent executes | Evidence required before continuing | Best practice and benefit |
+|---|---|---|---|
+| **1. Discover and implement** | Locate existing integrations; create the app, six tools, tests, wrappers, schemas, Terraform and charts. | Verified contracts, resolved configuration/locks and implemented required sources. | Reuse verified assets; prevent invented interfaces and premature execution. |
+| **2. Test and run locally** | `make bootstrap` → `doctor` → `validate` → `test` → `build` → `security` → `local-up` → runtime doctor → smoke. | Five non-live test suites, scans and authenticated local smoke; candidate `release.json`. | Catch correctness and integration failures before cloud deployment. |
+| **3. Build and publish in trusted CI** | Checks on the selected commit; build → security → publish in `build.yml`. | Signed immutable image/chart references, SBOM/provenance, reports and `published-release.json`. | Establish one authoritative release; preserve its identity across environments. |
+| **4. Deploy staging** | Verify bundle; bootstrap backend if needed; plan → authorized apply → configure cluster → dependencies → runtime doctor → migrate → deploy. | Exact plan/identity, healthy platform, migration success, deployed digest and Helm revision. | Separate infrastructure and workload ownership; apply the reviewed plan and respect dependency order. |
+| **5. Qualify staging** | `make verify SUITE=smoke`, then `load`, `recovery`, final `smoke` and `make verify SUITE=qualification`. | Passing reports for the same release/configuration, aggregated in `qualification.json`. | Test recovery in isolation and verify the original service afterward; reject incomplete evidence. |
+| **6. Promote to production** | Restore qualified bundle; doctor validates `QUALIFICATION_MANIFEST`; production plan/apply, dependencies, migration, deploy and smoke. | Trusted staging qualification, production authorization and passing production checks for identical application/chart artifacts. | Promote what staging tested; enforce the gate in scripts and protected workflows. |
+| **7. Record delivery or recover** | Production smoke writes `completion.json`; rollout/smoke failure invokes one compatible recovery path. | Linked reports, commit/digest, plan, schema/Helm revisions, timestamps and any blockers. | Distinguish successful delivery, recovery of an older release and partial completion. |
 
 **Best practices to highlight:**
 
-- **Gated delivery:** A stage must establish evidence before dependent work proceeds. Scripts and CI checks must enforce this rule; an instruction to stop is insufficient by itself.
-- **Progressive qualification:** Verify locally, exercise recovery in staging, then promote the same release to production. Keep destructive qualification tests isolated from production data.
-- **Readiness plus functional verification:** Probes help control traffic and restarts; authenticated MCP smoke tests verify customer-visible behavior. [Kubernetes probe guidance](https://kubernetes.io/docs/concepts/workloads/pods/probes/) distinguishes startup, readiness and liveness responsibilities.
-- **Bounded work:** Deadlines, retry limits and spend budgets constrain failures and cost. Recovery must report an actionable blocker when those bounds are exhausted.
+- **Gated delivery:** Scripts must verify prerequisites before mutation. In production, both preflight and the shared wrapper enforce trusted staging qualification; a direct script invocation cannot bypass it.
+- **Artifact identity:** `release.json` describes the candidate, `published-release.json` identifies signed published artifacts, `qualification.json` records staging eligibility, and `completion.json` records verified production delivery. Each artifact answers a different question.
+- **Environment-specific authorization:** Staging and production use different identities, configuration and infrastructure plans. The application/image/chart artifacts and policy versions remain the qualified ones.
+- **Progressive qualification:** Test locally, prove load/recovery in staging and use read-only cloud-control checks in production. No destructive production test is part of promotion.
+- **Readiness plus functional verification:** Probes help control traffic and restarts; authenticated MCP smoke tests check customer-visible behavior. [Kubernetes probe guidance](https://kubernetes.io/docs/concepts/workloads/pods/probes/) distinguishes startup, readiness and liveness.
+- **Honest recovery reporting:** A successful rollback protects service availability; it does not qualify the failed new release.
 
-**Point to:** Section 6's seven numbered steps, complete local/CI/staging/production blocks, qualification.json and completion.json. Show that production consumes trusted staging evidence and never rebuilds the release. Walk through one submission from `analyze_auction` to durable status and cited results, rather than reading every command aloud.
+**Point to:** Section 6's seven steps and five shell blocks; `scripts/{infra,deploy,verify,doctor}.sh`, `scripts/lib/common.sh`, the Makefile and `docs/execution.md`. Show `QUALIFICATION_MANIFEST` in the production block and the absence of production build/publish commands.
+
+**If asked why this is explicit enough:**
+
+> Each step names an execution entry point, its required inputs and the result that permits the next step. AGENTS.md keeps that sequence visible; version-controlled auxiliary files define how the commands carry it out. Required checks must return nonzero when evidence is missing or a gate fails.
 
 ## 7. Acceptance Criteria & Definition of Done
 
@@ -164,7 +189,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 
 > Completion requires demonstrated outcomes. All six tools must work, the integrations must pass authorized live checks, and a 100-lot catalog must be accounted for through durable analysis.
 >
-> Calculations must reproduce from frozen evidence and policy versions. Authorization, retries, recovery, infrastructure gates and production smoke checks must pass. The completion report links those results to the source revision, image digest, infrastructure plan and deployed release.
+> Calculations must reproduce from frozen evidence and policy versions. For example, the four-sale fixture must return a median of 250 and bounds of 175 and 325. Authorization, retries, recovery, staging qualification and production smoke must pass, with reports tied to the exact source revision and release.
 >
 > If an external gate blocks delivery, the agent reports partial completion and the precise remaining action. It cannot claim production success from file generation alone.
 
@@ -174,7 +199,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 - **Recovery testing:** Exercise worker failure, redelivery, restoration and applicable rollback. State the conditions tested and measured recovery objectives rather than claiming all failures are covered.
 - **Evidence-based completion:** Link check results to the exact commit, digest, plan and release. Keep targets, specified behavior and verified outcomes distinct, including the repository's current placeholder status.
 
-**Point to:** Acceptance checklist and `completion.json` evidence requirements.
+**Point to:** Section 7's calculation fixtures, 100-lot smoke case, latency/load thresholds, recovery objectives and qualification gate. Explain that `qualification.json` permits promotion; `completion.json` establishes verified production delivery.
 
 ## Closing
 
@@ -190,6 +215,8 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 - Explain trade-offs when asked: orchestration complexity, provider latency and quotas, sparse comparable sales, and the operating cost of the chosen production stack.
 - Discuss incomplete evidence openly. Faster research is valuable, but it does not establish valuation accuracy or guarantee investment returns.
 - Explain the ownership rule: AGENTS.md states outcomes and gates; config/policy files, scripts and chart values own implementation detail. Null real-world identifiers are discovery gates, not invented deployment values.
+- If asked where the step-by-step process is, open Section 6 immediately. Walk through its seven numbered steps and explicit command blocks, then use the auxiliary files to explain one wrapper in detail.
+- Explain that local builds support development; trusted CI publishes the authoritative bundle. Staging and production consume that bundle without rebuilding.
 - Use the named scripts and charts to demonstrate execution detail. Avoid reading implementation tables line by line.
 - When naming a best practice, point to its concrete requirement and explain the customer or operational benefit. Discuss the added cost or limitation when relevant.
 - Describe these controls as requirements until they have been implemented and verified; the reference links support the practices, not a claim that the placeholder repository already enforces them.
