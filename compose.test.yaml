@@ -1,1 +1,4 @@
-# Structural placeholder. Implement the corresponding AGENTS.md contract before use.
+# Placeholder: implement isolated Compose test dependencies from AGENTS.md.
+# Include pinned Azurite and isolated disposable test volumes.
+# Local Blob behavior tests do not establish real-Azure identity/network/protection behavior.
+# No test services are configured or executed by this placeholder.

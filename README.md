@@ -15,6 +15,7 @@ The intended workflow is to discover an auction, request catalog analysis, track
 - [AGENTS.md](AGENTS.md): business context, application requirements, architecture, execution contract and acceptance criteria.
 - [SCAFFOLD.md](SCAFFOLD.md): placeholder behavior and repository conventions.
 - [Integration inventory](docs/integrations.md): required providers and the previous scraper's historical source.
+- [Storage contract](docs/storage.md): Azure Blob provisioning, local Azurite, identity and verification.
 - [Execution documentation](docs/execution.md) and [operations documentation](docs/operations.md): locations for verified implementation runbooks.
 
 ## Required stack
@@ -24,7 +25,8 @@ The intended workflow is to discover an auction, request catalog analysis, track
 | Service and assistant tools | Python, FastAPI and the official MCP SDK |
 | Research orchestration and model access | LangGraph and LiteLLM |
 | Background execution | Celery and RabbitMQ |
-| Durable data and source evidence | PostgreSQL and S3-compatible object storage |
+| Durable structured data | Azure Database for PostgreSQL Flexible Server |
+| Evidence and reports | Azure Blob Storage in staging/production; Azurite locally |
 | Local and production environments | Docker Compose and AKS |
 | Provisioning and delivery | Terraform, Helm and GitHub Actions |
 | Observability | OpenTelemetry |

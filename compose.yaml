@@ -1,1 +1,5 @@
-# Structural placeholder. Implement the corresponding AGENTS.md contract before use.
+# Placeholder: implement the local Compose stack from AGENTS.md.
+# Include pinned Azurite with a persistent development volume for Blob storage.
+# Application, Celery, RabbitMQ and PostgreSQL services are also required.
+# Supply local-only credentials outside Git; discover the URL from service configuration.
+# No containers are configured or started by this placeholder.

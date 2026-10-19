@@ -90,7 +90,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 
 > FastAPI and the MCP SDK expose the service. LangGraph coordinates the research stages and checkpoints their progress. Celery and RabbitMQ deliver background work and handle retries, which keeps long analyses out of request handlers.
 >
-> LiteLLM centralizes authorized model access and usage controls. PostgreSQL owns durable job and result state, while S3-compatible storage retains larger evidence and report artifacts. OpenTelemetry connects the execution stages through traces and metrics.
+> LiteLLM centralizes authorized model access and usage controls. PostgreSQL owns durable job and result state, while Azure Blob Storage retains larger evidence and reports. Local Compose uses Azurite through the same Blob SDK. OpenTelemetry connects the execution stages through traces and metrics.
 >
 > These boundaries have costs: the graph, broker and workers add operational components. They support catalog-scale background processing, recovery and traceability. The repository map identifies the owning source files, and locked dependencies make builds reproducible.
 
@@ -115,6 +115,8 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 >
 > The release sequence is build, scan, then sign and publish. Staging and production use the same verified image digest and chart packages. Infrastructure changes apply the exact authorized saved plan, with checks for the environment, identity and input hashes.
 >
+> Storage is explicit: Azure Blob Storage in staging and production, provisioned with Terraform and accessed using AKS Workload Identity. Azurite supports local development. This keeps infrastructure in Azure or AKS and avoids operating a separate production object-storage cluster.
+>
 > Production controls include private data services, short-lived identities, secret injection, readiness checks and compatible database migrations. A failed release can restore a compatible application revision while preserving data. First deployments have their own recovery path because no earlier revision exists.
 
 **Best practices to highlight:**
@@ -122,6 +124,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 - **Declarative infrastructure with one owner:** Terraform defines infrastructure and Helm defines workloads. Clear ownership reduces competing updates and makes proposed changes reviewable.
 - **Review and apply the same plan:** Bind authorization to a saved Terraform plan, use remote state and locking, and reject changed inputs. This follows [HashiCorp's automation workflow](https://developer.hashicorp.com/terraform/tutorials/automation/automate-terraform).
 - **Short-lived deployment credentials:** Use OIDC federation and scoped roles instead of repository-stored cloud keys. [GitHub's Azure OIDC guidance](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-azure) describes the federated authentication approach.
+- **Explicit Azure storage ownership:** Terraform provisions private Azure Blob resources, and AKS Workload Identity grants scoped data access. Azurite supports local development; real Azure tests prove cloud identity, networking and protection behavior. See [Blob SDK setup](https://learn.microsoft.com/en-us/azure/storage/blobs/storage-blob-python-get-started) and [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite).
 - **Immutable releases and compatible recovery:** Promote the same verified digests and chart packages. Use compatible schema changes so an application rollback can preserve data; database reversal needs its own recovery decision.
 
 **Point to:** Terraform roots, chart paths, script mappings, release manifests and the saved-plan contract. Explain the ownership boundary between Terraform resources and Helm resources.

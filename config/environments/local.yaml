@@ -1,1 +1,4 @@
-# Placeholder for the local environment. Populate verified settings and secret references; never secret values.
+# Placeholder: local environment configuration.
+# Storage is Azurite in Docker Compose using the Azure Blob SDK.
+# Supply service URL and development-only credentials through validated local configuration.
+# Never commit credential values; see docs/storage.md.

@@ -1,1 +1,4 @@
-# Placeholder for the production environment. Populate verified settings and secret references; never secret values.
+# Placeholder: production environment configuration.
+# Storage is Azure Blob Storage (StorageV2, Standard ZRS), accessed with AKS Workload Identity.
+# Read account URL, container and identity references from Terraform outputs; no account keys.
+# Private connectivity, versioning and soft delete are required; see docs/storage.md.
