@@ -139,7 +139,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 
 **Say:**
 
-> This section turns the contracts into a sequence. The agent discovers assets, creates the required artifacts, validates locally, qualifies the release in staging and promotes it through the protected production workflow.
+> This section gives seven explicit steps: discover and implement, validate locally, build and publish in trusted CI, deploy staging, qualify staging, promote the same release to production, and record delivery or recovery. Each step has commands and an exit gate.
 >
 > Every stage has prerequisites and evidence. A failed gate stops dependent work. The agent fixes the defect and reruns affected checks without bypassing policy or rebuilding a different release for production.
 >
@@ -152,7 +152,7 @@ Walk through the document as a chain: customer problem → agent boundaries → 
 - **Readiness plus functional verification:** Probes help control traffic and restarts; authenticated MCP smoke tests verify customer-visible behavior. [Kubernetes probe guidance](https://kubernetes.io/docs/concepts/workloads/pods/probes/) distinguishes startup, readiness and liveness responsibilities.
 - **Bounded work:** Deadlines, retry limits and spend budgets constrain failures and cost. Recovery must report an actionable blocker when those bounds are exhausted.
 
-**Point to:** Local and staging command blocks, runtime checks and production promotion. Walk through one submission from `analyze_auction` to durable status and cited results, rather than reading every command aloud.
+**Point to:** Section 6's seven numbered steps, complete local/CI/staging/production blocks, qualification.json and completion.json. Show that production consumes trusted staging evidence and never rebuilds the release. Walk through one submission from `analyze_auction` to durable status and cited results, rather than reading every command aloud.
 
 ## 7. Acceptance Criteria & Definition of Done
 

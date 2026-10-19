@@ -176,7 +176,7 @@ Freeze snapshots, comparables, policy/model versions and lineage. Authorize arti
 
 ### Fixed platform choices and auxiliary ownership
 
-Implement these sources before running dependent targets. Auxiliary values may be calibrated before qualification; version/hash changes invalidate affected evidence. Never relax gates to obtain a pass.
+Implement these sources before dependent targets. Freeze calibrated values before qualification; changed hashes invalidate affected evidence. Never weaken gates.
 
 | Decision | Required choice and owning artifacts |
 |---|---|
@@ -195,17 +195,14 @@ Do not invent deployment names, domains, model versions, upstream pins, identiti
 
 Paths containing braces list files the agent must create. Locate and reuse existing integration code before creating adapters.
 
-| Path | Owner and purpose |
+| Source | Responsibility |
 |---|---|
-| `src/auction_assistant/{api,mcp_server,services,graph,workers,valuation,config}.py` | Interfaces, services, graph, jobs, valuation and configuration. |
-| `src/auction_assistant/adapters/{iarremate,historical_sales,artists,blob_storage}.py` | Scraper/API adapters and the Azure Blob client. |
-| `migrations/env.py`, `migrations/versions/`, `alembic.ini` | Alembic migrations. |
-| `pyproject.toml`, `uv.lock`, `.tool-versions`, `Dockerfile`, `compose.yaml`, `compose.test.yaml` | Locked builds and runtime; isolated test services. |
-| `config/environments/{local,staging,production}.yaml`, `config/environment.schema.json` | Verified identities, locations, secret references, limits and schema; no secrets. |
-| `config/{auth,models,runtime,valuation-policy,observability,retention,verification,alerts}.yaml`, `config/schemas/` | Versioned policy/defaults and per-file JSON Schemas; environment files supply verified references. |
-| `tests/{unit,contracts,integration,regression,evaluation,acceptance}/` | Test suites defined in section 7. |
-| `scripts/lib/common.sh`, scripts listed in section 1, `Makefile` | Shared safeguards, execution implementations and command interface. |
-| `docs/{integrations,execution,operations,storage,platform,security,valuation}.md` | Integration, execution, platform, security, valuation and recovery contracts. |
+| `src/auction_assistant/{api,mcp_server,services,graph,workers,valuation,config}.py` | API/tools, orchestration, jobs, calculations and config. |
+| `src/auction_assistant/adapters/{iarremate,historical_sales,artists,blob_storage}.py` | Verified provider and Blob adapters. |
+| `config/`, `tests/`, `migrations/` | Versioned policy/schemas, section 7 suites and Alembic. |
+| `scripts/`, `Makefile`, `docs/` | Section 1 entry points and owning implementation contracts. |
+
+`docs/execution.md` lists required manifests, locks, environment/config files and complete source inventories. Create/validate them before dependent commands.
 
 Pin tools in `.tool-versions`, Python dependencies in `uv.lock`, base images by digest, and providers and charts in their lockfiles.
 On first bootstrap, install pinned tools and generate missing dependency, provider and chart locks from manifests. Validate and commit locks before release checks; never silently update them.
@@ -217,18 +214,14 @@ Use Decimal money, UTC internally, explicit currencies, parameterized SQL, bound
 
 ### Terraform and Helm sources
 
-| Artifact | Required contents and owner |
+| Source | Required ownership |
 |---|---|
-| `infra/terraform/bootstrap/` | Dedicated Azure Blob `azurerm` state backend, Entra/OIDC access, native locking and reviewed migration. |
-| `infra/terraform/modules/platform/` | AKS, ACR, identities, PostgreSQL Flexible Server, networking, Key Vault, Azure OpenAI, monitoring and backups. `storage.tf` owns Blob resources. |
-| `infra/terraform/environments/{staging,production}/` | Each root contains `main.tf`, `versions.tf`, `backend.tf`, `variables.tf`, `outputs.tf`, `.terraform.lock.hcl`, nonsecret `backend.hcl`. |
-| `infra/policy/{terraform,kubernetes}.rego` | Enforce exposure, encryption, privilege and destructive-change rules. |
-| `deploy/helm/auction-platform/{Chart.yaml,Chart.lock,values.yaml,values-staging.yaml,values-production.yaml}` | RabbitMQ cluster, configuration and telemetry; separate pinned controller releases per `docs/platform.md`. |
-| `deploy/helm/auction-assistant/{Chart.yaml,values.yaml,values.schema.json,values-staging.yaml,values-production.yaml}` | Application release and validated environment values. |
-| `deploy/helm/auction-assistant/templates/` | `api-deployment.yaml`, `worker-deployment.yaml`, `service.yaml`, `gateway.yaml`, `httproute.yaml`, `certificate.yaml`, `secretproviderclass.yaml`, `scaledobject.yaml`, `triggerauthentication.yaml`, `serviceaccount.yaml`, `networkpolicy.yaml`, `hpa.yaml`, `pdb.yaml`. |
-| `deploy/helm/auction-migrations/{Chart.yaml,values.yaml,templates/job.yaml}` | Migration release: same image digest and exclusive database lock. |
-| `deploy/helm/auction-platform/templates/otel-collector.yaml` | Collector pipelines; load `config/alerts.yaml` through the monitoring integration. |
-| `.github/workflows/{ci,build,infra,release}.yml` | Checks; build and publish; protected plan and apply; serialized deployment and verification. |
+| `infra/terraform/{bootstrap,modules/platform,environments/staging,environments/production}/` | Azure resources, locked environment roots and protected `azurerm` state. |
+| `infra/policy/{terraform,kubernetes}.rego` | Exposure, encryption, privilege and destructive-change gates. |
+| `deploy/helm/{auction-platform,auction-assistant,auction-migrations}/` | Platform, application and exclusive migration releases with reviewed environment values. |
+| `.github/workflows/{ci,build,infra,release}.yml` | Checks, immutable publication, saved-plan apply and gated promotion. |
+
+`docs/execution.md` enumerates required Terraform/chart files; `docs/platform.md` defines controller/template ownership and install order. Terraform owns Azure services; Helm owns its declared Kubernetes resources.
 
 - Inventory and import owned existing resources before changes; Terraform and Helm must not own the same object.
 - Encrypt remote state, enable locking and separate environment roots. Restrict access to state and saved plans.
@@ -254,24 +247,13 @@ Write append-only `<step>-<suite-or-phase>-<attempt>.json` reports with revision
 Failed or blocked gates return nonzero. Restrict raw plans and configuration to `.private/`; exclude `.private/` and `artifacts/` from Git.
 Enforce operation deadlines from `docs/execution.md` and runtime limits from `config/runtime.yaml`.
 
-`test` runs all five non-live suites in its isolated Compose project. `verify` requires `RELEASE`; default `SUITE=smoke`.
+`test` runs five non-live suites in isolated Compose. `verify` requires `RELEASE`; default `SUITE=smoke`; `SUITE=qualification` aggregates staging evidence.
 
-| Target | Required behavior and evidence |
-|---|---|
-| `doctor` | `PHASE=preflight`: schema, verified identity/references, provider contracts and CI network reachability; runtime adds service probes. Permit absent not-yet-provisioned resources only during declared first provisioning. |
-| `infra-bootstrap` | Require an authorized bootstrap plan; create/import only the state backend, protect local bootstrap state and verify migration/locking. See `docs/execution.md`. |
-| `security` | Require `RELEASE`. Run pinned Gitleaks, Bandit, pip-audit, Trivy and Checkov; bind reports to the digest. Block high or critical findings except scoped, approved, expiring exceptions. |
-| `local-up/down` | Up requires `RELEASE`: healthy dependencies → migrate → app/workers. Down preserves volumes. Record health or shutdown. |
-| `configure-cluster` | Use scoped short-lived access; verify Azure identity, cluster, namespace and RBAC. |
-| `deploy-dependencies` | Require `RELEASE` and reviewed values; install platform chart and verify quorum, storage and telemetry. |
-| `migrate` | Require `RELEASE`, verified backups and schema compatibility. Run a unique migration release; record Job success, Alembic revision and logs. |
-| `deploy` | Require `RELEASE` and verified package, digest and values; record readiness, manifest and Helm revision. |
-| `rollback` | Require `RELEASE_REVISION` and schema compatibility; restore it and verify smoke. |
+Scripts enforce target prerequisites, scans, migrations and rollback from `docs/execution.md`.
 
 `build` emits packages, SBOM/provenance and `release.json`; trusted CI `publish` requires passing checks, signs unchanged digests and emits `published-release.json`. Manifest fields and checks belong in `docs/execution.md`.
 AKS scripts require the published manifest; local execution accepts the candidate.
 `deployment-manifest.json` binds target/configuration and rollback references; see `docs/execution.md`.
-Promote identical artifacts; restore the verified bundle at consistent runner paths.
 `validate.sh` checks source, `pyproject.toml`, `uv.lock` and app/migration chart version consistency before build; it must not require a future release manifest.
 
 ### Wrapper implementation ownership
@@ -289,12 +271,17 @@ Changes to approved plans, values, policies or release artifacts invalidate prio
 
 ## 6. Agent Execution Workflow
 
-### First run: discover, construct, verify locally
+Run these steps in order from repository root with fail-fast shells. A failed gate stops dependent work; fix it and retain failure evidence.
+`docs/execution.md` defines wrapper internals and artifact handoff. Never execute a referenced artifact before implementing and validating it.
 
-Complete discovery in section 2; document verified infrastructure ownership in `docs/integrations.md`.
-Create the required scripts and Make targets before invoking them. Build an end-to-end analysis path, then complete all six tools and acceptance suites.
-Review script checks, arguments and data protection before execution.
-Run each block from repository root as a fail-fast shell script. Each wrapper must also enforce its prerequisites:
+### Step 1 — Discover and implement
+
+Inspect section 2's existing assets and record verified contracts in `docs/integrations.md`.
+Create the application, six tools, adapters, database migrations, scripts/Make targets, configs/schemas, tests, Terraform, charts and workflows from sections 3–5.
+Complete one end-to-end analysis path, then all tool/security/recovery cases. Resolve verified identifiers, policy thresholds and dependency locks before qualification.
+**Exit gate:** required sources exist, no execution placeholders remain, and contracts/configuration are ready for validation.
+
+### Step 2 — Test and run locally
 
 ```bash
 set -euo pipefail
@@ -313,23 +300,95 @@ make doctor PHASE=runtime
 make verify SUITE=smoke
 ```
 
-### Staging: saved plan, dependency release, migration, application
+**Exit gate:** five non-live suites, scans and live local smoke pass; retain reports and candidate manifest. Local startup must migrate before starting API/workers.
 
-Trusted CI runs build → security → publish, then supplies `RELEASE` as the verified `published-release.json` from that bundle. Preserve it across every stage; do not build again.
-Set fresh staging `RUN_ID`/`RUN_DIR` values. Use `make infra-bootstrap` only when required and authorized.
+### Step 3 — Build, scan, sign and publish in trusted CI
+
+After `ci.yml` checks the selected commit, `build.yml` executes this block in trusted CI. This creates the authoritative release bundle; local images are not promoted.
+
+```bash
+set -euo pipefail
+export ENV=local
+export RUN_ID="$(date -u +%Y%m%d%H%M%S)"
+export RUN_DIR="artifacts/$ENV/$RUN_ID"
+make bootstrap
+make validate
+make test
+make build
+export RELEASE="$RUN_DIR/release.json"
+make security
+make publish
+export RELEASE="$RUN_DIR/published-release.json"
+```
+
+**Exit gate:** signed image/chart references, SBOM/provenance and passing reports bind to one commit and digest.
+Upload the complete immutable bundle; downstream jobs restore it as `RELEASE_BUNDLE`. Neither staging nor production rebuilds it.
+
+### Step 4 — Provision and deploy staging
+
+`infra.yml` restores the selected bundle and verifies its signatures/source revision. If the state backend is absent, complete authorized `make infra-bootstrap` before planning.
+`release.yml` preserves that bundle, plan evidence and run directory across its serialized jobs.
 
 ```bash
 set -euo pipefail
 export ENV=staging
 export RUN_ID="$(date -u +%Y%m%d%H%M%S)"
 export RUN_DIR="artifacts/$ENV/$RUN_ID"
+export RELEASE="${RELEASE_BUNDLE:?Restore the verified release bundle}/published-release.json"
 make bootstrap
 make doctor
 make validate
 make security
 make infra-plan
 export PLAN_MANIFEST="$RUN_DIR/plan-manifest.json"
-# infra-apply enforces authorization for this exact saved plan.
+# Apply only the exact authorized saved plan.
+make infra-apply
+make configure-cluster
+make deploy-dependencies
+make doctor PHASE=runtime
+make migrate
+make deploy
+```
+
+**Exit gate:** authorized infrastructure, healthy platform, successful migration and ready API/workers use the published digest. Record plan, schema and Helm revisions.
+
+### Step 5 — Test staging and qualify promotion
+
+Continue with the same staging `ENV`, `RUN_DIR` and `RELEASE`:
+
+```bash
+set -euo pipefail
+make verify SUITE=smoke
+make verify SUITE=load
+make verify SUITE=recovery
+make verify SUITE=smoke
+make verify SUITE=qualification
+```
+
+Smoke exercises all six tools, real providers, ownership, citations, persistence and traces.
+On AKS it also runs `tests/acceptance/test_cloud_controls.py`; perform destructive TLS/secret-rotation and Blob-version drills only on isolated staging fixtures.
+Load must meet section 7; isolated recovery must meet RPO ≤24h/RTO ≤4h. The final smoke rechecks the original staging deployment after those tests.
+**Exit gate:** `RUN_DIR/qualification.json` binds every passing report to the same release, policies and reviewed configuration. Missing, stale, skipped or mismatched evidence blocks promotion.
+
+### Step 6 — Promote the same release to production
+
+Protected workflows restore the same bundle and its trusted staging qualification artifact. Require authorization for the exact production plan and configuration.
+`doctor` must verify `QUALIFICATION_MANIFEST` before production mutation. Production runs read-only cloud controls; never load/restore/rotate production as a test.
+
+```bash
+set -euo pipefail
+export ENV=production
+export RUN_ID="$(date -u +%Y%m%d%H%M%S)"
+export RUN_DIR="artifacts/$ENV/$RUN_ID"
+export RELEASE="${RELEASE_BUNDLE:?Restore the qualified release bundle}/published-release.json"
+export QUALIFICATION_MANIFEST="${QUALIFICATION_MANIFEST:?Restore trusted staging qualification}"
+make bootstrap
+make doctor
+make validate
+make security
+make infra-plan
+export PLAN_MANIFEST="$RUN_DIR/plan-manifest.json"
+# Apply only the exact authorized production plan.
 make infra-apply
 make configure-cluster
 make deploy-dependencies
@@ -337,21 +396,16 @@ make doctor PHASE=runtime
 make migrate
 make deploy
 make verify SUITE=smoke
-make verify SUITE=load
-make verify SUITE=recovery
 ```
 
-Smoke uses all six tools, authorized providers and `config/verification.yaml`; verify citations, lot accounting, persistence, ownership and traces.
-On AKS, smoke also runs `tests/acceptance/test_cloud_controls.py`: Azure identity/private access, Blob protection, OAuth client flow, model deployment, TLS/secrets controls and telemetry/alert delivery. Local integration tests never require cloud mutations.
-Run the section 7 load profile; record request counts, errors, latency and throttling.
-Require recovery point objective (RPO) ≤24h and recovery time objective (RTO) ≤4h. Recovery tests must not change production data or shared environments.
+**Exit gate:** deployed image/chart hashes equal the staging-qualified release; production identity, private access, backup/migration gates and smoke pass. No build or publish occurs during promotion.
 
-### Production promotion and subsequent changes
+### Step 7 — Record delivery or recover
 
-After staging qualifies, select `ENV=production`, fresh `RUN_ID` and `RUN_DIR` values, and the same published `RELEASE`.
-Repeat staging commands through `make verify SUITE=smoke` in protected workflows. Keep destructive load and recovery tests out of production.
-Verify production identity, exact authorized plan/configuration, backup gate, image digest and smoke report before declaring delivery.
-On changes, read nearby code and tests, run focused checks and the full release gates, regenerate owned outputs, and update locks and docs together. Retain failure evidence and report blockers.
+Production smoke writes `RUN_DIR/completion.json` only after all production and promotion gates pass, linking section 7's required evidence.
+On rollout/smoke failure, `deploy.sh`/`verify.sh` attempt one compatible rollback, preserve diagnostics and verify recovery; first installations use the documented first-install path.
+A recovered previous release does not make the failed new release successful. Report partial delivery/blockers explicitly.
+For later changes, rerun affected focused tests and this release sequence with a new bundle; never replace evidence for an already-qualified digest.
 
 ## 7. Acceptance Criteria & Definition of Done
 
@@ -369,6 +423,7 @@ Implement the named checks below. Calculation vectors use BRL; set taxes and fix
 | `make test-evaluation` / `tests/evaluation/` | Freeze error/coverage acceptance thresholds in valuation policy using calibration data before testing independent held-out sales. Report sample size, median absolute percentage error and range coverage; missing data/thresholds or unmet thresholds fail. |
 | `make verify SUITE=smoke` / `tests/acceptance/` | Authorized live scraper/API checks and all six tools pass; a catalog of ≥100 lots reaches a terminal state with each lot accounted for. Numeric outputs cite evidence; partial failures are explicit. Persistence, ownership denial, trace correlation and deployed digest match pass. |
 | `make verify SUITE=smoke` / `tests/acceptance/test_cloud_controls.py` | AKS cloud controls pass against actual Azure services; staged safe fixtures prove denial, private access and Blob version restoration. TLS/secret rotation drills run only in staging. |
+| `make verify SUITE=qualification` | Require passing staging smoke/load/recovery and final smoke for the same release/configuration; emit trusted `qualification.json`. Production rejects missing/mismatched evidence. |
 | `make verify SUITE=load` | After 30s warm-up, run 20 concurrent authenticated clients for 5m: read/status p95 <2s, submission p95 <3s, no unexpected application errors or lost jobs. All five concurrent 100-lot analyses finish within `config/runtime.yaml`'s 900s analysis deadline. |
 | `make verify SUITE=recovery` | Staging worker loss/redelivery preserves committed results without duplication. Isolated database/object restore meets RPO ≤24h and RTO ≤4h; applicable rollback or first-install recovery passes. Restore the qualified digest and rerun smoke. |
 | `make validate`, `make security` | Lint, typing, Compose, Terraform, Helm/schema, policy and scans pass for the release. Security exceptions require owner, scope and expiry; weakening checks or missing reports fails. |

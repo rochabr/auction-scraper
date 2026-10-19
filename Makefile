@@ -13,7 +13,7 @@ bootstrap:
 	@bash scripts/bootstrap.sh --env "$(ENV)" --run-dir "$(RUN_DIR)"
 
 doctor:
-	@bash scripts/doctor.sh --env "$(ENV)" --run-dir "$(RUN_DIR)" --phase "$(PHASE)"
+	@bash scripts/doctor.sh --env "$(ENV)" --run-dir "$(RUN_DIR)" --phase "$(PHASE)" --qualification-manifest "$(QUALIFICATION_MANIFEST)"
 
 validate:
 	@bash scripts/validate.sh --env "$(ENV)" --run-dir "$(RUN_DIR)"
