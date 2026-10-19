@@ -42,21 +42,21 @@ Record physical inspection, artwork authentication, ownership and condition as v
 Create artifacts before invoking them; reuse these entry points on subsequent changes.
 `make help` must list targets, required inputs, underlying scripts and their side effects.
 
-| Task | Command | Canonical implementation |
-|---|---|---|
-| Install pinned dependencies | `make bootstrap` | `scripts/bootstrap.sh` |
-| Diagnose configuration and connectivity | `make doctor` | `scripts/doctor.sh` |
-| Validate code, generated artifacts and infrastructure | `make validate` | `scripts/validate.sh` |
-| Select a test suite | `make test-unit`, `make test-contracts`, `make test-integration`, `make test-regression`, `make test-evaluation` | `scripts/test.sh --suite <selected-suite>` |
-| Run the full non-live suite | `make test` | `scripts/test.sh --suite all` |
-| Build immutable candidate artifacts | `make build` | `scripts/build.sh` |
-| Scan source, dependencies, images and infrastructure | `make security` | `scripts/security.sh` |
-| Sign and publish a passing candidate in trusted CI | `make publish` | `scripts/publish.sh` |
-| Start or stop local services | `make local-up`, `make local-down` | `scripts/local.sh --action up`, `scripts/local.sh --action down` |
-| Plan or apply infrastructure | `make infra-plan`, `make infra-apply` | `scripts/infra.sh --action plan`, `scripts/infra.sh --action apply` |
-| Verify target and deploy dependencies | `make configure-cluster`, `make deploy-dependencies` | `scripts/cluster.sh`, `scripts/dependencies.sh` |
-| Migrate, deploy and verify | `make migrate`, `make deploy`, `make verify` | `scripts/migrate.sh`, `scripts/deploy.sh`, `scripts/verify.sh` |
-| Restore a compatible app revision | `make rollback` | `scripts/rollback.sh` |
+| Command | Script |
+|---|---|
+| `make bootstrap` | `scripts/bootstrap.sh` |
+| `make doctor` | `scripts/doctor.sh` |
+| `make validate` | `scripts/validate.sh` |
+| `make test-unit`, `make test-contracts`, `make test-integration`, `make test-regression`, `make test-evaluation` | `scripts/test.sh --suite <selected-suite>` |
+| `make test` | `scripts/test.sh --suite all` |
+| `make build` | `scripts/build.sh` |
+| `make security` | `scripts/security.sh` |
+| `make publish` | `scripts/publish.sh` |
+| `make local-up`, `make local-down` | `scripts/local.sh --action up`, `scripts/local.sh --action down` |
+| `make infra-plan`, `make infra-apply` | `scripts/infra.sh --action plan`, `scripts/infra.sh --action apply` |
+| `make configure-cluster`, `make deploy-dependencies` | `scripts/cluster.sh`, `scripts/dependencies.sh` |
+| `make migrate`, `make deploy`, `make verify` | `scripts/migrate.sh`, `scripts/deploy.sh`, `scripts/verify.sh` |
+| `make rollback` | `scripts/rollback.sh` |
 
 Pass `ENV`, `RUN_DIR` and required inputs as defined in sections 5–6. Never default to production.
 
@@ -66,7 +66,7 @@ Pass `ENV`, `RUN_DIR` and required inputs as defined in sections 5–6. Never de
 
 - Inspect instructions, existing code, tests, integrations and cloud ownership first.
 - Create the application, scripts, tests, charts, Terraform and workflows. Execute the prescribed stages.
-- Keep one root AGENTS.md. Put implementation details in their source artifacts and operator documentation.
+- Keep one root AGENTS.md; implementation details belong in source artifacts and operator docs.
 - Make reviewable changes; fix failed gates before dependent work and rerun affected checks.
 - Keep the mandatory stack. Do not weaken this file, tests, security policy or established deployment protection rules.
 - Honor existing authorization. Stop unauthorized or unapproved destructive actions and report the blocker.
@@ -95,18 +95,18 @@ Validate URLs and redirects, block server-side request forgery and allow only ve
 - Validate supported iarremate.com URLs; normalize IDs, artist, title, medium, dimensions, dates, currency and prices.
 - Retain source text, identifiers, retrieval times and links.
 - Distinguish starting bids, estimates, reserve information, hammer prices, and prices including buyer's premium.
-- Resolve artist aliases using provider evidence; surface ambiguous attribution rather than merging identities silently.
+- Resolve artist aliases with evidence; flag ambiguous attribution.
 - Bound provider pagination, concurrency and deadlines; cache research.
-- Deduplicate transactions by provider identifiers and documented cross-source matching rules.
+- Deduplicate transactions by provider IDs and documented cross-source rules.
 - Mark withdrawn, unsold, disputed, incomplete, and stale records explicitly; exclude ineligible records from valuation.
-- Snapshot inputs so a completed analysis remains reproducible when upstream catalogs or prices change.
+- Freeze inputs so analysis remains reproducible after catalog or price changes.
 - Report partial coverage and failed lots explicitly.
 
 ### MCP tool contracts
 
 Use the official Python MCP SDK with authenticated Streamable HTTP transport.
-Expose exactly these six application tools with typed input and output schemas and documented examples.
-All tools enforce caller identity, resource ownership, bounded pagination, and safe structured errors.
+Expose exactly these six tools with typed inputs, outputs and examples.
+Enforce caller identity, resource ownership, pagination limits and safe errors.
 
 | Tool | Inputs | Required result |
 |---|---|---|
@@ -117,7 +117,7 @@ All tools enforce caller identity, resource ownership, bounded pagination, and s
 | `get_auction_analysis` | Analysis ID; optional filters and cursor | Ranked lot summaries, coverage, costs, evidence freshness, aggregate risks. |
 | `get_lot_analysis` | Analysis ID and lot ID | Detailed valuation, comparables, fee calculation, confidence, provenance, explanation. |
 
-- Version tool contracts, persist requests, reject invalid financial options and enforce authorization on canonical IDs; URLs are ingestion inputs.
+- Version contracts, persist requests and validate financial options. Authorize canonical IDs; use URLs only for ingestion.
 - Return typed errors for input, authorization, not found, rate limits and provider failure.
 - Return not-ready state and partial coverage for unfinished analyses.
 - Repeated submission by the same caller with the same key and payload returns the same analysis ID.
@@ -131,26 +131,26 @@ All tools enforce caller identity, resource ownership, bounded pagination, and s
 - Reject unsupported attributes. Retain citations and confidence. Flag unverified authenticity, provenance, condition and attribution.
 - Filter realized sales by artist, attribution, medium, period, dimensions and condition.
 - Record why each sale was included or excluded and every adjustment. Normalize price basis and currency only with evidence.
-- Record FX source, rate date, rate, and policy; without supported conversion, keep currencies separate.
+- Record FX source, date, rate and policy. Keep currencies separate without conversion evidence.
 - Exclude asking prices and estimates from realized-sale samples. Prohibit arbitrary area, inflation, condition or significance multipliers.
-- Require three independent eligible sales for numeric recommendations; otherwise report insufficient evidence.
-- Use median and 25th–75th percentile range; version quantile method, matching thresholds, lookback, outlier rules and minimum sample.
+- Require at least three independent eligible sales for numeric recommendations; otherwise report insufficient evidence.
+- Use median and 25th–75th percentiles with linear interpolation at sorted index `p × (n − 1)`. Version matching, lookback, exclusions and minimum sample.
 - Evaluate changes on held-out sales; report sample size, median absolute percentage error and interval coverage.
-- Separate time periods and artwork identities across calibration and evaluation to prevent leakage.
+- Separate calibration and evaluation by time and artwork identity to prevent leakage.
 - Label market estimates clearly; percentile ranges are not confidence intervals.
-- Derive confidence from explicit sample size, match quality, recency, completeness, and dispersion rules.
+- Derive confidence from sample size, match quality, recency, completeness and dispersion rules.
 - Cite risks and historical significance. Context alone cannot raise the computed value.
 
 Calculate the maximum hammer bid with a deterministic total-acquisition-cost function:
 
-- Let `V_low` be the lower valuation bound, `m ∈ [0,1)` the configured safety margin and optional `B` the total acquisition budget.
+- Let `V_low` be the lower valuation bound, `m ∈ [0,1)` the configured safety margin and optional `B` the per-lot total acquisition budget.
 - Define acquisition cap `C = min(B, V_low × (1 − m))`; omit the budget term when absent.
 - Define monotone `T(h)` as hammer `h` plus documented premium, taxes on their applicable bases, and fixed acquisition costs.
-- Solve for the largest allowed bid increment `h` satisfying `T(h) ≤ C`; round down, never above the cap.
-- If no positive allowed bid fits the cap, return no affordable bid and explain the binding cost constraint.
-- Handle tiered premiums and taxes with their actual schedules; do not reduce them to an incorrect flat percentage.
+- Find the largest hammer bid `h` on the auction's documented bid ladder satisfying `T(h) ≤ C`; round down, never above the cap.
+- If no positive bid fits the cap, return no affordable bid and identify the binding cost.
+- Apply actual premium tiers and tax bases; never flatten a tiered schedule incorrectly.
 - Record fee source, date, currency, included and excluded costs, margin and budget.
-- If a required cost is unknown, withhold the maximum hammer recommendation and identify the missing input.
+- Withhold maximum bids when required costs are unknown; identify the missing input.
 - Apply deterministic labels: `opportunity`, `watch`, `avoid` or `insufficient_evidence`. Compare identical currencies and price bases; promise no return.
 - Rank eligible lots using documented value-to-cost and confidence rules. List unsupported lots separately.
 
@@ -176,9 +176,9 @@ Freeze snapshots, comparables, policy and model versions, and lineage. Authorize
 
 ### Architecture decisions
 
-- LangGraph checkpoints research stages. Celery and RabbitMQ handle delivery and retries; keep one owner for each retry policy.
-- Centralize model access and spend in LiteLLM. Keep valuation in deterministic Python so the same evidence produces the same numeric result.
-- Keep application access through SQL and S3-compatible interfaces. Parameterize provider settings to preserve portability across local and AKS deployments.
+- Checkpoint research with LangGraph; use Celery/RabbitMQ for delivery and keep one retry owner per operation.
+- Centralize model access/spend in LiteLLM; deterministic Python reproduces numeric results from identical evidence.
+- Parameterize SQL and S3-compatible access for portability across local and AKS deployments.
 
 ### Repository map — required generated artifacts
 
@@ -186,18 +186,19 @@ Brace groups enumerate files to create under each directory. Discover existing i
 
 | Path | Owner and purpose |
 |---|---|
-| `src/auction_assistant/{api,mcp_server,services,graph,workers,valuation,config}.py` | Thin interfaces, shared application services, workflow, jobs, pure calculations and typed configuration. |
+| `src/auction_assistant/{api,mcp_server,services,graph,workers,valuation,config}.py` | Interfaces, services, graph, jobs, pure valuation and typed configuration. |
 | `src/auction_assistant/adapters/{iarremate,historical_sales,artists}.py` | Adapters for the discovered scraper and APIs. |
 | `migrations/env.py`, `migrations/versions/`, `alembic.ini` | Alembic migration source and configuration. |
 | `pyproject.toml`, `uv.lock`, `.tool-versions`, `Dockerfile`, `compose.yaml`, `compose.test.yaml` | Locked builds and runtime; isolated test services. |
-| `config/environments/{local,staging,production}.yaml`, `config/environment.schema.json` | Verified identities and locations, secret references, resource limits and schema. No secret values. |
+| `config/environments/{local,staging,production}.yaml`, `config/environment.schema.json` | Verified identities, locations, secret references, limits and schema; no secrets. |
 | `config/{valuation-policy,verification,alerts}.yaml` | Versioned calculation rules, discovered live auction inputs and alert thresholds/destinations. |
-| `tests/{unit,contracts,integration,regression,evaluation,acceptance}/` | Separate calculation, provider, service, defect-regression, holdout and deployed-runtime suites. |
+| `tests/{unit,contracts,integration,regression,evaluation,acceptance}/` | Calculation, provider, integration, regression, holdout and runtime suites. |
 | `scripts/lib/common.sh`, scripts listed in section 1, `Makefile` | Shared safeguards, execution implementations and command interface. |
-| `docs/{integrations,execution,operations}.md` | Verified contracts, commands/ownership, onboarding, monitoring, incidents and recovery. |
+| `docs/{integrations,execution,operations}.md` | Contracts, commands, ownership, onboarding and recovery. |
 
 Pin tools in `.tool-versions`, Python dependencies in `uv.lock`, base images by digest, and providers and charts in their lockfiles.
-`bootstrap.sh` installs locked tools and libraries and verifies imports. Use `uv sync --frozen` afterward. `doctor` defaults to `PHASE=preflight`.
+On first bootstrap, install pinned tools and generate missing dependency, provider and chart locks from manifests. Validate and commit locks before release checks; never silently update them.
+Thereafter run `uv lock --check` and `uv sync --frozen`; use `uv run --locked` for checks. Verify mandatory imports. `doctor` defaults to `PHASE=preflight`.
 Validate configuration at startup; reject unknown keys, incomplete identity and unsupported environment names. Never source YAML as shell code.
 Use Decimal money, UTC internally, explicit currencies, parameterized SQL, bounded I/O and escaped report content.
 
@@ -207,15 +208,15 @@ Use Decimal money, UTC internally, explicit currencies, parameterized SQL, bound
 
 | Artifact | Required contents and owner |
 |---|---|
-| `infra/terraform/bootstrap/` | Remote-state backend root; isolated bootstrap, protected temporary state and reviewed state migration. |
+| `infra/terraform/bootstrap/` | Isolated backend root, protected state and reviewed migration. |
 | `infra/terraform/modules/platform/` | AKS, private networking, registry, federated identities, managed PostgreSQL, DNS and storage infrastructure. |
 | `infra/terraform/environments/{staging,production}/` | Each root contains `main.tf`, `versions.tf`, `backend.tf`, `variables.tf`, `outputs.tf`, `.terraform.lock.hcl`, nonsecret `backend.hcl`. |
-| `infra/policy/{terraform,kubernetes}.rego` | Machine-enforced exposure, encryption, privilege and destructive-change rules. |
-| `deploy/helm/auction-platform/{Chart.yaml,Chart.lock,values.yaml,values-staging.yaml,values-production.yaml}` | Pinned RabbitMQ, shared configuration and telemetry; private S3-compatible runtime when managed here. |
-| `deploy/helm/auction-assistant/{Chart.yaml,values.yaml,values.schema.json,values-staging.yaml,values-production.yaml}` | Application release and typed environment overrides. |
+| `infra/policy/{terraform,kubernetes}.rego` | Enforce exposure, encryption, privilege and destructive-change rules. |
+| `deploy/helm/auction-platform/{Chart.yaml,Chart.lock,values.yaml,values-staging.yaml,values-production.yaml}` | Pinned RabbitMQ, configuration, telemetry and owned S3-compatible runtime. |
+| `deploy/helm/auction-assistant/{Chart.yaml,values.yaml,values.schema.json,values-staging.yaml,values-production.yaml}` | Application release and validated environment values. |
 | `deploy/helm/auction-assistant/templates/` | `api-deployment.yaml`, `worker-deployment.yaml`, `service.yaml`, `ingress.yaml`, `serviceaccount.yaml`, `networkpolicy.yaml`, `hpa.yaml`, `pdb.yaml`. |
-| `deploy/helm/auction-migrations/{Chart.yaml,values.yaml,templates/job.yaml}` | Separate migration release using the same application digest and an exclusive database migration lock. |
-| `deploy/helm/auction-platform/templates/otel-collector.yaml` | Collector and exporter pipelines; configure alerts from `config/alerts.yaml` through the installed monitoring integration. |
+| `deploy/helm/auction-migrations/{Chart.yaml,values.yaml,templates/job.yaml}` | Migration release: same image digest and exclusive database lock. |
+| `deploy/helm/auction-platform/templates/otel-collector.yaml` | Collector pipelines; load `config/alerts.yaml` through the monitoring integration. |
 | `.github/workflows/{ci,build,infra,release}.yml` | Checks; build and publish; protected plan and apply; serialized deployment and verification. |
 
 - Inventory and import owned existing resources before changes; Terraform and Helm must not own the same object.
@@ -232,47 +233,43 @@ Use Decimal money, UTC internally, explicit currencies, parameterized SQL, bound
 All targets run from repository root. Their scripts accept `--env "$ENV" --run-dir "$RUN_DIR"` plus the inputs below.
 `scripts/lib/common.sh` enforces arguments, target identity, permissions, input hashes, prerequisite evidence, deadlines and redaction.
 Use unique DNS-safe run IDs and `RUN_DIR=artifacts/<env>/<run-id>`. Reject reuse across revisions or environments.
-Write append-only `<step>-<suite-or-phase>-<attempt>.json` reports: revision, input/output hashes, timestamps, status and evidence references.
+Write append-only `<step>-<suite-or-phase>-<attempt>.json` reports with revision, hashes, times, status and evidence. Empty/skipped required suites or printed instructions cannot pass.
 Failed or blocked gates return nonzero. Restrict raw plans and configuration to `.private/`; exclude `.private/` and `artifacts/` from Git.
 Timeouts: checks and build 30m, Terraform 60m, platform 20m, migrations and app 10m each, smoke 15m. Bound retries, load and recovery suites.
 
-Use the scripts in section 1 with these prerequisites and evidence requirements.
+Use section 1's scripts. Section 7 defines test gates; the remaining operation contracts follow. `test` runs all five non-live suites; isolate and clean only its Compose test project. `verify` requires `RELEASE`; default `SUITE=smoke`.
 
 | Target | Required behavior and evidence |
 |---|---|
-| `bootstrap` | Install pinned tools and dependencies. Verify imports and configuration schema; record the results. |
-| `doctor` | Default `PHASE=preflight` checks configuration, secret references, providers and cloud identity. `PHASE=runtime` adds deployed data services. Write a redacted connectivity report. |
-| `test-*`, `test` | Run the named suite. `all` covers unit, contract, integration, regression and evaluation tests. Isolate and clean only the test Compose project; retain JUnit and evaluation reports. |
-| `validate` | Validate code, configuration, Terraform, charts and generated artifacts. Record lint, schema, policy and version checks. |
+| `doctor` | Default `PHASE=preflight`: config, secret references, providers and cloud identity. `PHASE=runtime` adds data services. Record redacted checks. |
 | `build` | Build candidate OCI image and chart packages. Emit `release.json`, SBOM and provenance. |
 | `security` | Require `RELEASE`. Run pinned Gitleaks, Bandit, pip-audit, Trivy and Checkov; bind reports to the digest. Block high or critical findings except scoped, approved, expiring exceptions. |
 | `publish` | Require trusted CI, `RELEASE` and passing checks. Publish unchanged artifacts, sign their digests and emit `published-release.json`. |
-| `local-up/down` | Up requires `RELEASE`: start healthy dependencies, migrate, then start the app and workers. Down preserves volumes. Record service health or shutdown. |
-| `infra-plan/apply` | Validate policy and save the plan. Apply requires `PLAN_MANIFEST` and authorization for that plan. Record its hash and verified outputs. Use `make infra-bootstrap` separately for the backend. |
-| `configure-cluster` | Obtain scoped, short-lived access. Verify tenant, subscription, cluster, namespace and role-based access against environment configuration. |
-| `deploy-dependencies` | Require `RELEASE` and reviewed values. Install the packaged platform chart; verify broker quorum, storage and telemetry. |
+| `local-up/down` | Up requires `RELEASE`: healthy dependencies → migrate → app/workers. Down preserves volumes. Record health or shutdown. |
+| `infra-plan/apply` | Save a policy-checked plan; apply requires its `PLAN_MANIFEST` and authorization. Record hash/outputs. Use `make infra-bootstrap` separately. |
+| `configure-cluster` | Use scoped short-lived access; match tenant, subscription, cluster, namespace and RBAC to environment config. |
+| `deploy-dependencies` | Require `RELEASE` and reviewed values; install platform chart and verify quorum, storage and telemetry. |
 | `migrate` | Require `RELEASE`, verified backups and schema compatibility. Run a unique migration release; record Job success, Alembic revision and logs. |
-| `deploy` | Require `RELEASE` and verified package, digest and values. Record application readiness, deployment manifest and Helm revision. |
-| `verify` | Require `RELEASE`. Select `SUITE=smoke` (default), `SUITE=load` or `SUITE=recovery`. Record the deployed digest, returned IDs and acceptance results. |
-| `rollback` | Require `RELEASE_REVISION` and schema compatibility. Restore that app revision and record passing smoke results. |
+| `deploy` | Require `RELEASE` and verified package, digest and values; record readiness, manifest and Helm revision. |
+| `rollback` | Require `RELEASE_REVISION` and schema compatibility; restore it and verify smoke. |
 
 `release.json` records source version, image digest, chart hashes, schema compatibility and build and test evidence. `published-release.json` adds registry and signature references.
 AKS scripts require the published manifest; local execution accepts the candidate.
 `deployment-manifest.json` records target identity, configuration and values hashes, and the previous Helm revision and release.
-Promote identical packages and image digests. Restore the verified bundle to the expected paths on each runner.
-`validate.sh` must check source package version, `pyproject.toml`, `uv.lock` and app/migration chart versions against the declared release version.
+Promote identical artifacts; restore the verified bundle at consistent runner paths.
+`validate.sh` checks source, `pyproject.toml`, `uv.lock` and app/migration chart version consistency before build; it must not require a future release manifest.
 
 ### Required commands inside the wrappers
 
-- `validate.sh`: `uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src/`, Compose config checks and `terraform fmt -check -recursive`.
+- `validate.sh`: `uv run --locked ruff check .`, `uv run --locked ruff format --check .`, `uv run --locked mypy src/`, Compose config checks and `terraform fmt -check -recursive`.
 - Initialize and validate Terraform roots without backends for static checks. Lint and render all charts for both environments; run kubeconform and conftest.
 - Resolve locked chart dependencies with `helm dependency build`. Package source charts and regenerate manifests into `RUN_DIR/rendered/`; never edit vendored charts or rendered output directly.
-- `test.sh`: `uv run pytest tests/unit/`, `tests/contracts/`, `tests/integration/`, `tests/regression/`, `tests/evaluation/` as selected; support `TEST_PATH` for a focused test.
+- `test.sh`: `uv run --locked pytest tests/unit/`, `tests/contracts/`, `tests/integration/`, `tests/regression/`, `tests/evaluation/` as selected; support `TEST_PATH` for a focused test.
 - `infra.sh`: set `TF_ROOT=infra/terraform/environments/$ENV`; initialize with `terraform -chdir="$TF_ROOT" init -input=false -lockfile=readonly -backend-config=backend.hcl`.
 - Generate nonsecret tfvars from validated configuration; run `terraform -chdir="$TF_ROOT" plan -input=false -var-file=<generated-tfvars> -out=<private-plan>`.
 - Export restricted JSON with `terraform -chdir="$TF_ROOT" show -json <verified-saved-plan>`; evaluate `infra/policy/terraform.rego`; write `RUN_DIR/plan-manifest.json` with plan hash/location, source/config/lock hashes and Azure identity.
 - Apply only after policy/authorization checks using `terraform -chdir="$TF_ROOT" apply -input=false <verified-saved-plan>`; never generate a replacement plan during apply.
-- Keep tool versions, workspace layout and runner OS and architecture identical for plan and apply. Reject stale state, changed inputs or mismatched identities.
+- Keep tools, workspace and runner OS/architecture identical for plan/apply. Reject stale state, changed inputs or identities.
 - `deploy.sh`: `helm upgrade --install auction-assistant <verified-chart-package> --namespace <verified-namespace> -f <base-values> -f <environment-values> --wait --rollback-on-failure --timeout 10m`.
 - Pin compatible Helm 4 tooling; pass the release image digest explicitly. Never use mutable image tags or `--reuse-values`.
 - `rollback.sh`: `helm rollback auction-assistant <verified-revision> --namespace <verified-namespace> --wait --timeout 10m`; then invoke smoke verification.
@@ -292,7 +289,7 @@ Changes to approved plans, values, policies or release artifacts invalidate prio
 
 Complete discovery in section 2; document verified infrastructure ownership in `docs/integrations.md`.
 Create the required scripts and Make targets before invoking them. Build an end-to-end analysis path, then complete all six tools and acceptance suites.
-Before first execution, review script checks, argument handling and data protection.
+Review script checks, arguments and data protection before execution.
 Run each block from repository root as a fail-fast shell script. Each wrapper must also enforce its prerequisites:
 
 ```bash
@@ -315,7 +312,7 @@ make verify SUITE=smoke
 ### Staging: saved plan, dependency release, migration, application
 
 Trusted CI runs build → security → publish, then supplies `RELEASE` as the verified `published-release.json` from that bundle. Preserve it across every stage; do not build again.
-Set a fresh `RUN_ID` and `RUN_DIR` after selecting staging. Bootstrap the remote backend with `make infra-bootstrap` only when required and authorized.
+Set fresh staging `RUN_ID`/`RUN_DIR` values. Use `make infra-bootstrap` only when required and authorized.
 
 ```bash
 set -euo pipefail
@@ -340,8 +337,8 @@ make verify SUITE=load
 make verify SUITE=recovery
 ```
 
-Smoke invokes all six tools with real authorized providers and `config/verification.yaml`; prove cited results, lot accounting, persistence, ownership denial and trace correlation.
-Load tests require read and status p95 <2s and submission p95 <3s at 20 concurrent clients. Run five concurrent 100-lot analyses; record completion latency and throttling.
+Smoke uses all six tools, authorized providers and `config/verification.yaml`; verify citations, lot accounting, persistence, ownership and traces.
+Run the section 7 load profile and record request counts, errors, completion latency and throttling. Expired deadlines or unfinished accepted jobs fail verification.
 Recovery tests cover worker loss, redelivery, isolated data restoration and compatible rollback. Restore the qualified digest and rerun smoke. For a first release, record why rollback is inapplicable and verify recovery and data preservation.
 Require recovery point objective (RPO) ≤24h and recovery time objective (RTO) ≤4h. Recovery tests must not change production data or shared environments.
 
@@ -350,29 +347,33 @@ Require recovery point objective (RPO) ≤24h and recovery time objective (RTO) 
 After staging qualifies, select `ENV=production`, fresh `RUN_ID` and `RUN_DIR` values, and the same published `RELEASE`.
 Repeat staging commands through `make verify SUITE=smoke` in protected workflows. Keep destructive load and recovery tests out of production.
 Verify production identity, exact authorized plan/configuration, backup gate, image digest and smoke report before declaring delivery.
-On later changes, read nearby code/tests first; run the focused test, then the owning suite and release gates below.
-
-For valuation or policy changes, run unit, regression and holdout suites. For adapters, run contract, integration and live checks. For MCP, authentication or jobs, test ownership and recovery.
-For infrastructure changes, validate policy and create a new plan. For charts, images or migrations, verify schema, security, staging rollout and recovery.
-Regenerate from source, review diffs and update locks and documentation together. Retain failure evidence, report blockers and continue independent work.
+On changes, read nearby code and tests, run focused checks and the full release gates, regenerate owned outputs, and update locks and docs together. Retain failure evidence and report blockers.
 
 ## 7. Acceptance Criteria & Definition of Done
 
-- [ ] All six tools pass discovery, schema, success, error, pagination, authentication and ownership tests.
-- [ ] Scraper and both APIs pass authorized live contract checks with verified interfaces.
-- [ ] A 100-lot catalog completes asynchronously with durable progress and every lot accounted for.
-- [ ] Restarts and redelivery preserve committed results without duplicates; cross-user access fails.
-- [ ] Numeric results reproduce from frozen evidence and policy. Data, fee, identity and FX gaps constrain recommendations.
-- [ ] Fee, tax, budget, margin and bid-increment boundary tests pass. Held-out quality metrics and limits are recorded.
-- [ ] Make targets invoke named scripts; Compose and AKS pass the same application contracts.
-- [ ] Plan policy and authorization, migrations, scans, TLS, identity and private-service gates pass.
-- [ ] Production uses the packages and digest verified in staging and passes authenticated live MCP smoke tests.
-- [ ] Redacted telemetry covers queue age, retries, failures, coverage, provider latency, tokens and spend.
-- [ ] Alerts for stalled work, failures, backups and spend reach the configured monitoring destination.
-- [ ] Load, checkpoints, isolated restore and applicable rollback or first-installation recovery pass in staging.
-- [ ] Operator docs cover installation, verified integrations, configuration, ownership, costs, incidents and recovery.
-- [ ] `RUN_DIR/completion.json` links reports, manifests, commit, digest, plan hash, schema and Helm revisions, timestamps and blockers.
+Implement the named checks below. Calculation vectors use BRL; set taxes and fixed costs to zero only where specified.
+
+| Command / suite | Required inputs or scenario → expected outcome |
+|---|---|
+| `make test-unit` / `tests/unit/` | Four independent eligible normalized sales at 100, 200, 300, 400 → median 250, lower bound 175, upper bound 325 using the declared quantile method. |
+| `make test-unit` | `V_low=1000`, margin 20%, per-lot budget 600, premium 10%, zero tax/fixed costs, bid grid 0,10,20,… → cap 600, max hammer 540, total 594; next bid 550 costs 605 and fails. |
+| `make test-unit` | Fewer than three independent eligible sales → insufficient evidence and no numeric valuation/bid. Eligible sales with unknown required fees → valuation may remain, but maximum bid is withheld. Add tax-base, tiered-premium and rounding boundaries. |
+| `make test-contracts` / `tests/contracts/` | Frozen authorized provider records validate normalization, pagination and error mapping. Reject invalid schemas and unsupported destinations. Verify live connectivity separately. |
+| `make test-integration` / `tests/integration/` | All six tools pass schema, pagination and status tests. Same caller/key/payload → same ID and one durable job; changed payload → typed conflict. Missing/invalid identity and cross-user access are denied. |
+| `make test-regression` / `tests/regression/` | Each defect has a reproducing case; retained cases pass without weakening expected results. |
+| `make test-evaluation` / `tests/evaluation/` | Freeze error/coverage acceptance thresholds in valuation policy using calibration data before testing independent held-out sales. Report sample size, median absolute percentage error and range coverage; missing data/thresholds or unmet thresholds fail. |
+| `make verify SUITE=smoke` / `tests/acceptance/` | Authorized live scraper/API checks and all six tools pass; a catalog of ≥100 lots reaches a terminal state with each lot accounted for. Numeric outputs cite evidence; partial failures are explicit. Persistence, ownership denial, trace correlation and deployed digest match pass. |
+| `make verify SUITE=load` | After 30s warm-up, run 20 concurrent authenticated clients for 5m: read/status p95 <2s, submission p95 <3s, no unexpected application errors or lost jobs. All five concurrent 100-lot analyses finish within the deadline. |
+| `make verify SUITE=recovery` | Staging worker loss/redelivery preserves committed results without duplication. Isolated database/object restore meets RPO ≤24h and RTO ≤4h; applicable rollback or first-install recovery passes. Restore the qualified digest and rerun smoke. |
+| `make validate`, `make security` | Lint, typing, Compose, Terraform, Helm/schema, policy and scans pass for the release. Security exceptions require owner, scope and expiry; weakening checks or missing reports fails. |
+
+Select a live smoke reference lot with ≥3 eligible realized sales and known fees; require at least one cited valuation/bid and no unexpected execution failures.
+Insufficient-evidence lots count as processed successes with an explicit outcome; execution failures count as failed. At termination, `processed = succeeded + failed = total`; persist every lot's outcome and use `completed_with_errors` when failures exist.
+Require a nonempty JUnit report for each test suite and a JSON report for every verification suite, with pass/fail counts, input/policy hashes and evidence references. Do not skip required checks to obtain a green result.
+
+- [ ] The named scripts execute these checks; Compose and AKS satisfy the same application contracts.
+- [ ] Authorized plan, migrations, identity, TLS and private-service gates pass; production uses the packages and digest qualified in staging.
+- [ ] Redacted telemetry and alerts cover queue age, retries, failures, coverage, provider latency, tokens, spend and backups; verify the configured monitoring destination.
+- [ ] Operations docs and `RUN_DIR/completion.json` link reports, manifests, commit/digest, plan hash, schema/Helm revisions, timestamps and blockers.
 
 Declare completion only after production verification; report partial delivery explicitly when an external gate blocks it.
-
-References: [AWS](https://github.com/aws-samples/sample-agentic-platform/blob/main/AGENTS.md), [DeerFlow](https://github.com/bytedance/deer-flow/blob/main/AGENTS.md), [Kubeflow](https://github.com/kubeflow/hub/blob/main/AGENTS.md), [Operator Controller](https://github.com/operator-framework/operator-controller/blob/main/AGENTS.md).
