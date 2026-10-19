@@ -1,0 +1,5 @@
+apiVersion: v2
+name: auction-platform
+description: Structural placeholder; rendering is blocked until implementation.
+type: application
+version: 0.0.0
